@@ -7,3 +7,5 @@ At present, this package only works in conjuntion with Psi4 and requires the lat
 
 Start by forking my Psi4 repository and compiling it according to the instructions provided in the Psi4 manual ([Compiling and Installing from Source](http://psicode.org/psi4manual/1.1/build_planning.html)). This package assumes Psi4 is used as a Python module, which can be accomplished by following [Using Psi4 as a Python Module](http://psicode.org/psi4manual/1.1/build_planning.html). This package has been developed with Python3 in mind, but no major complications are expected in using it with Python2 apart from potential syntactic changes.
 
+## Coming soon
+New features should be added in the near future. Ongoing work to pair PsiEmbed with PySCF is underway, and the documentation should come out shortly. In the meantime, feel free to reach with questions/comments/issues.
