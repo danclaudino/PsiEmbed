@@ -255,7 +255,8 @@ class Psi4Embed(Embed):
             level (str): level of theory to run calculation.
         """
         if hasattr(self, '_mol'):
-            psi4.set_options({'docc': [self.n_act_mos]})
+            psi4.set_options({'docc': [self.n_act_mos]
+                'reference': self.keywords['high_level_reference']})
             if (self.keywords['high_level'][:2] == 'cc' and
                 self.keywords['cc_type'] == 'df'):
                 psi4.set_options({'cc_type': self.keywords['cc_type'],
@@ -277,7 +278,7 @@ class Psi4Embed(Embed):
         psi4.core.set_output_file(self.keywords['driver_output'], True)
         psi4.set_options({'save_jk': 'true',
                         'basis': self.keywords['basis'],
-                        'reference': self.keywords['reference'],
+                        'reference': self.keywords['low_level_reference'],
                         'ints_tolerance': self.keywords['ints_tolerance'],
                         'e_convergence': self.keywords['e_convergence'],
                         'd_convergence': self.keywords['d_convergence'],
