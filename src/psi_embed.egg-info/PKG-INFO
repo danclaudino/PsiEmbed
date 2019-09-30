@@ -1,0 +1,10 @@
+Metadata-Version: 1.0
+Name: psi-embed
+Version: 0.1
+Summary: Projection-based embedding calculations in Psi4 using SVD-based partitioning
+Home-page: https://github.com/danclaudino/PsiEmbed.git
+Author: Daniel Claudino
+Author-email: dclaudino@vt.edu
+License: MIT
+Description: UNKNOWN
+Platform: UNKNOWN
