@@ -85,7 +85,7 @@ class Embed:
             self.n_act_mos = self.n_active_aos
             self.n_env_mos = len(sigma) - self.n_act_mos
 
-        if self.keywords['reference'] == 'rhf':
+        if self.keywords['low_level_reference'] == 'rhf':
             return self.n_act_mos, self.n_env_mos
         else:
             assert beta_sigma is not None, 'Provide beta singular values'
@@ -124,6 +124,8 @@ class Embed:
             self.outfile.write('     SPADE partition:\n')
             self.outfile.write('     D. Claudino, N.J. Mayhall,\n')
             self.outfile.write('     J. Chem. Theory Comput. 2019, 15, 1053.\n')
+        self.outfile.write('\n\n')
+        self.outfile.write(' ' + 65*'-' + '\n\n')
         return None
 
     def print_scf(self, e_act, e_env, two_e_cross, e_act_emb, correction):
@@ -254,14 +256,7 @@ class Psi4Embed(Embed):
         Args:
             level (str): level of theory to run calculation.
         """
-        if hasattr(self, '_mol'):
-            psi4.set_options({'docc': [self.n_act_mos]
-                'reference': self.keywords['high_level_reference']})
-            if (self.keywords['high_level'][:2] == 'cc' and
-                self.keywords['cc_type'] == 'df'):
-                psi4.set_options({'cc_type': self.keywords['cc_type'],
-                                'df_ints_io': 'save' })
-        else:
+        if level == None:
             # Preparing molecule string with C1 symmetry
             add_c1 = self.keywords['geometry'].splitlines()
             add_c1.append('symmetry c1')
@@ -274,9 +269,9 @@ class Psi4Embed(Embed):
             self._mol.set_molecular_charge(self.keywords['charge'])
             self._mol.set_multiplicity(self.keywords['multiplicity'])
 
-        psi4.core.be_quiet()
-        psi4.core.set_output_file(self.keywords['driver_output'], True)
-        psi4.set_options({'save_jk': 'true',
+            psi4.core.be_quiet()
+            psi4.core.set_output_file(self.keywords['driver_output'], True)
+            psi4.set_options({'save_jk': 'true',
                         'basis': self.keywords['basis'],
                         'reference': self.keywords['low_level_reference'],
                         'ints_tolerance': self.keywords['ints_tolerance'],
@@ -289,20 +284,19 @@ class Psi4Embed(Embed):
                         'soscf': self.keywords['low_level_soscf']
                         })
 
-        if level == None:
             self.e, self._wfn = psi4.energy(self.keywords['low_level'],
                 molecule = self._mol, return_wfn=True)
             self._n_basis_functions = self._wfn.basisset().nbf()
             if self.keywords['low_level'] != 'HF' :
                 self.e_xc_total = psi4.core.VBase.quadrature_values\
                             (self._wfn.V_potential())["FUNCTIONAL"]
-                if self.keywords['reference'] == 'rhf':
+                if self.keywords['low_level_reference'] == 'rhf':
                     self.v_xc_total = self._wfn.Va().clone().np
                 else:
                     self.alpha_v_xc_total = self._wfn.Va().clone().np
                     self.beta_v_xc_total = self._wfn.Vb().clone().np
             else:
-                if self.keywords['reference'] == 'rhf':
+                if self.keywords['low_level_reference'] == 'rhf':
                     self.v_xc_total = np.zeros([self._n_basis_functions,
                         self._n_basis_functions])
                 else:
@@ -312,10 +306,16 @@ class Psi4Embed(Embed):
                         self._n_basis_functions])
                 self.e_xc_total = 0.0
         else:
+            psi4.set_options({'docc': [self.n_act_mos],
+                'reference': self.keywords['high_level_reference']})
+            if (self.keywords['high_level'][:2] == 'cc' and
+                self.keywords['cc_type'] == 'df'):
+                psi4.set_options({'cc_type': self.keywords['cc_type'],
+                                'df_ints_io': 'save' })
             self.e, self._wfn = psi4.energy('hf',
                 molecule = self._mol, return_wfn=True)
 
-        if self.keywords['reference'] == 'rhf':
+        if self.keywords['low_level_reference'] == 'rhf':
             self.occupied_orbitals = self._wfn.Ca_subset('AO', 'OCC').np
             self.j = self._wfn.jk().J()[0].np
             self.k = self._wfn.jk().K()[0].np
@@ -610,7 +610,7 @@ class Psi4Embed(Embed):
             beta_orbitals (numpy.array): beta orbitals, if running
                 with references other then rhf.
         """
-        if self.keywords['reference'] == 'rhf' and beta_orbitals == None:
+        if self.keywords['high_level_reference'] == 'rhf' and beta_orbitals == None:
             overlap = self.occupied_orbitals.T @ self.ao_overlap @ orbitals
             u, s, vh = np.linalg.svd(overlap)
             self.determinant_overlap = (

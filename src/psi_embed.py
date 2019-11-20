@@ -1,4 +1,4 @@
-from embedding_solver import run_closed_shell, run_open_shell
+from embedding_module import run_closed_shell, run_open_shell
 
 def driver(keywords):
     """
@@ -55,7 +55,15 @@ def driver(keywords):
             Defaults to 1.
         cc_type (str): algorithm for ERI MO transformation. 
             Defaults to 'df' (density-fitting).
-
+        write_embedded_potential (bool): writes embedded potential
+            to embedding_potential.txt in numpy format. 
+            Defaults to False.
+        write_embedded_h_core (bool): writes embedded core Hamiltonian
+            to embedded_h_core.txt in numpy format.
+            Defaults to False.
+        write_embedded_orbitals (bool): writes embedded orbitals 
+            to embedded_orbitals.txt in numpy format.
+            Defaults to False.
     """
 
     # Default keywords
@@ -83,6 +91,9 @@ def driver(keywords):
     default_keywords['molden'] = False
     default_keywords['print_level'] = 1
     default_keywords['cc_type'] = 'df'
+    default_keywords['write_embedding_potential'] = False
+    default_keywords['write_embedded_h_core'] = False
+    default_keywords['write_embedded_orbitals'] = False
 
     # Checking if the necessary keywords have been defined
     assert 'low_level' in keywords, ('\n Choose level of theory',
@@ -105,12 +116,12 @@ def driver(keywords):
             keywords['high_level_reference'] == 'rhf'):
         run_closed_shell(keywords)
     elif (keywords['low_level_reference'] == 'uhf' and 
-            keywords['high_level_reference'] == 'uhf' or):
+            keywords['high_level_reference'] == 'uhf' or
             keywords['low_level_reference'] == 'uhf' and 
             keywords['high_level_reference'] == 'rohf'):
         run_open_shell(keywords)
     else:
-        raise Exception(' The allowed combinations of 
-            low/high_level_reference keywords are: RHF/RHF, UHF/UHF, 
-            and UHF/ROHF.')
+        raise Exception(' The allowed combinations of' 
+            + 'low/high_level_reference keywords are: RHF/RHF, UHF/UHF, '
+            + 'and UHF/ROHF.')
 

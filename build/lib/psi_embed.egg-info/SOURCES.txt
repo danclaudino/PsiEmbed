@@ -1,7 +1,7 @@
 README.md
 setup.py
 src/embedding_methods.py
-src/embedding_solver.py
+src/embedding_module.py
 src/psi_embed.py
 src/psi_embed.egg-info/PKG-INFO
 src/psi_embed.egg-info/SOURCES.txt
