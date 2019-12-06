@@ -1,0 +1,482 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>embedding_methods module &#8212; PsiEmbed 0.1 documentation</title>
+    <link rel="stylesheet" href="_static/agogo.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" /> 
+  </head><body>
+    <div class="header-wrapper" role="banner">
+      <div class="header">
+        <div class="headertitle"><a
+          href="index.html">PsiEmbed 0.1 documentation</a></div>
+        <div class="rel" role="navigation" aria-label="related navigation">
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a>
+        </div>
+       </div>
+    </div>
+
+    <div class="content-wrapper">
+      <div class="content">
+        <div class="document">
+            
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-embedding_methods">
+<span id="embedding-methods-module"></span><h1>embedding_methods module<a class="headerlink" href="#module-embedding_methods" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="embedding_methods.Embed">
+<em class="property">class </em><code class="sig-prename descclassname">embedding_methods.</code><code class="sig-name descname">Embed</code><span class="sig-paren">(</span><em class="sig-param">keywords</em><span class="sig-paren">)</span><a class="headerlink" href="#embedding_methods.Embed" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Class with package-independent embedding methods.</p>
+<dl class="method">
+<dt id="embedding_methods.Embed.banner">
+<code class="sig-name descname">banner</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#embedding_methods.Embed.banner" title="Permalink to this definition">¶</a></dt>
+<dd><p>Prints the banner in the output file.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="embedding_methods.Embed.dot">
+<em class="property">static </em><code class="sig-name descname">dot</code><span class="sig-paren">(</span><em class="sig-param">A</em>, <em class="sig-param">B</em><span class="sig-paren">)</span><a class="headerlink" href="#embedding_methods.Embed.dot" title="Permalink to this definition">¶</a></dt>
+<dd><p>(Deprecated) Computes the trace (dot or Hadamard product)
+of matrices A and B.
+This has now been replaced by a lambda function in
+embedding_module.py.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>A</strong> (<em>numpy.array</em>) – </p></li>
+<li><p><strong>B</strong> (<em>numpy.array</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>The trace (dot product) of A * B</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="embedding_methods.Embed.orbital_partition">
+<code class="sig-name descname">orbital_partition</code><span class="sig-paren">(</span><em class="sig-param">sigma</em>, <em class="sig-param">beta_sigma=None</em><span class="sig-paren">)</span><a class="headerlink" href="#embedding_methods.Embed.orbital_partition" title="Permalink to this definition">¶</a></dt>
+<dd><p>Partition the orbital space by SPADE or all AOs in the
+projection basis. Beta variables are only used for open shells.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>sigma</strong> (<em>numpy.array</em>) – Singular values.</p></li>
+<li><p><strong>beta_sigma</strong> (<em>numpy.array</em><em> (</em><em>None</em><em>)</em>) – Beta singular values.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>self.n_act_mos</strong> (<em>int</em>) – (alpha) number of active MOs.</p></li>
+<li><p><strong>self.n_env_mos</strong> (<em>int</em>) – (alpha) number of environment MOs.</p></li>
+<li><p><strong>self.beta_n_act_mos</strong> (<em>int</em>) – Beta number of active MOs.</p></li>
+<li><p><strong>self.beta_n_env_mos</strong> (<em>int</em>) – Beta number of environment MOs.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="embedding_methods.Embed.orbital_rotation">
+<code class="sig-name descname">orbital_rotation</code><span class="sig-paren">(</span><em class="sig-param">orbitals</em>, <em class="sig-param">n_active_aos</em>, <em class="sig-param">ao_overlap=None</em><span class="sig-paren">)</span><a class="headerlink" href="#embedding_methods.Embed.orbital_rotation" title="Permalink to this definition">¶</a></dt>
+<dd><p>SVD orbitals projected onto active AOs to rotate orbitals.</p>
+<p>If ao_overlap is not provided, C is assumed to be in an
+orthogonal basis.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>orbitals</strong> (<em>numpy.array</em>) – MO coefficient matrix.</p></li>
+<li><p><strong>n_active_aos</strong> (<em>int</em>) – Number of atomic orbitals in the active atoms.</p></li>
+<li><p><strong>ao_overlap</strong> (<em>numpy.array</em><em> (</em><em>None</em><em>)</em>) – AO overlap matrix.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>rotation_matrix</strong> (<em>numpy.array</em>) – Matrix to rotate orbitals.</p></li>
+<li><p><strong>singular_values</strong> (<em>numpy.array</em>) – Singular values.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="embedding_methods.Embed.print_scf">
+<code class="sig-name descname">print_scf</code><span class="sig-paren">(</span><em class="sig-param">e_act</em>, <em class="sig-param">e_env</em>, <em class="sig-param">two_e_cross</em>, <em class="sig-param">e_act_emb</em>, <em class="sig-param">correction</em><span class="sig-paren">)</span><a class="headerlink" href="#embedding_methods.Embed.print_scf" title="Permalink to this definition">¶</a></dt>
+<dd><p>Prints mean-field info from before and after embedding.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>e_act</strong> (<em>float</em>) – Energy of the active subsystem.</p></li>
+<li><p><strong>e_env</strong> (<em>float</em>) – Energy of the environment subsystem.</p></li>
+<li><p><strong>two_e_cross</strong> (<em>float</em>) – Intersystem interaction energy.</p></li>
+<li><p><strong>e_act_emb</strong> (<em>float</em>) – Energy of the embedded active subsystem.</p></li>
+<li><p><strong>correction</strong> (<em>float</em>) – Correction from the embedded density.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="embedding_methods.Embed.print_sigma">
+<code class="sig-name descname">print_sigma</code><span class="sig-paren">(</span><em class="sig-param">sigma</em>, <em class="sig-param">ishell</em><span class="sig-paren">)</span><a class="headerlink" href="#embedding_methods.Embed.print_sigma" title="Permalink to this definition">¶</a></dt>
+<dd><p>Formats the printing of singular values from the CL shells.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>sigma</strong> (<em>numpy.array</em><em> or </em><em>list</em>) – Singular values.</p></li>
+<li><p><strong>ishell</strong> (<em>int</em>) – CL shell index.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="embedding_methods.Embed.print_summary">
+<code class="sig-name descname">print_summary</code><span class="sig-paren">(</span><em class="sig-param">e_mf_emb</em><span class="sig-paren">)</span><a class="headerlink" href="#embedding_methods.Embed.print_summary" title="Permalink to this definition">¶</a></dt>
+<dd><p>Prints summary of CL shells.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>e_mf_emb</strong> (<em>float</em>) – Mean-field embedded energy.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="embedding_methods.Psi4Embed">
+<em class="property">class </em><code class="sig-prename descclassname">embedding_methods.</code><code class="sig-name descname">Psi4Embed</code><span class="sig-paren">(</span><em class="sig-param">keywords</em><span class="sig-paren">)</span><a class="headerlink" href="#embedding_methods.Psi4Embed" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#embedding_methods.Embed" title="embedding_methods.Embed"><code class="xref py py-class docutils literal notranslate"><span class="pre">embedding_methods.Embed</span></code></a></p>
+<p>Class with embedding methods using Psi4.</p>
+<dl class="method">
+<dt id="embedding_methods.Psi4Embed.ao_operator">
+<code class="sig-name descname">ao_operator</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#embedding_methods.Psi4Embed.ao_operator" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the matrix representation of the operator chosen to
+construct the shells.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p><ul class="simple">
+<li><p><strong>K</strong> (<em>numpy.array</em>) – Exchange.</p></li>
+<li><p><strong>V</strong> (<em>numpy.array</em>) – Electron-nuclei potential.</p></li>
+<li><p><strong>T</strong> (<em>numpy.array</em>) – Kinetic energy.</p></li>
+<li><p><strong>H</strong> (<em>numpy.array</em>) – Core (one-particle) Hamiltonian.</p></li>
+<li><p><strong>S</strong> (<em>numpy.array</em>) – Overlap matrix.</p></li>
+<li><p><strong>F</strong> (<em>numpy.array</em>) – Fock matrix.</p></li>
+<li><p><strong>K_orb</strong> (<em>numpy.array</em>) – K orbitals (see Feller and Davidson, JCP, 74, 3977 (1981)).</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="embedding_methods.Psi4Embed.basis_projection">
+<code class="sig-name descname">basis_projection</code><span class="sig-paren">(</span><em class="sig-param">orbitals</em>, <em class="sig-param">projection_basis</em><span class="sig-paren">)</span><a class="headerlink" href="#embedding_methods.Psi4Embed.basis_projection" title="Permalink to this definition">¶</a></dt>
+<dd><p>Defines a projection of orbitals in one basis onto another.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>orbitals</strong> (<em>numpy.array</em>) – MO coefficients to be projected.</p></li>
+<li><p><strong>projection_basis</strong> (<em>str</em>) – Name of basis set onto which orbitals are to be projected.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>projected_orbitals</strong> – MO coefficients of orbitals projected onto projection_basis.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>numpy.array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="embedding_methods.Psi4Embed.closed_shell_subsystem">
+<code class="sig-name descname">closed_shell_subsystem</code><span class="sig-paren">(</span><em class="sig-param">orbitals</em><span class="sig-paren">)</span><a class="headerlink" href="#embedding_methods.Psi4Embed.closed_shell_subsystem" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the potential matrices J, K, and V and subsystem energies.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>orbitals</strong> (<em>numpy.array</em>) – MO coefficients of subsystem.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>e</strong> (<em>float</em>) – Total energy of subsystem.</p></li>
+<li><p><strong>e_xc</strong> (<em>float</em>) – DFT Exchange-correlation energy of subsystem.</p></li>
+<li><p><strong>j</strong> (<em>numpy.array</em>) – Coulomb matrix of subsystem.</p></li>
+<li><p><strong>k</strong> (<em>numpy.array</em>) – Exchange matrix of subsystem.</p></li>
+<li><p><strong>v_xc</strong> (<em>numpy.array</em>) – Kohn-Sham potential matrix of subsystem.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="embedding_methods.Psi4Embed.correlation_energy">
+<code class="sig-name descname">correlation_energy</code><span class="sig-paren">(</span><em class="sig-param">span_orbitals=None</em>, <em class="sig-param">kernel_orbitals=None</em>, <em class="sig-param">span_orbital_energies=None</em>, <em class="sig-param">kernel_orbital_energies=None</em><span class="sig-paren">)</span><a class="headerlink" href="#embedding_methods.Psi4Embed.correlation_energy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the correlation energy for the current set of active
+virtual orbitals.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>span_orbitals</strong> (<em>numpy.array</em>) – Orbitals transformed by the span of the previous shell.</p></li>
+<li><p><strong>kernel_orbitals</strong> (<em>numpy.array</em>) – Orbitals transformed by the kernel of the previous shell.</p></li>
+<li><p><strong>span_orbital_energies</strong> (<em>numpy.array</em>) – Orbitals energies of the span orbitals.</p></li>
+<li><p><strong>kernel_orbital_energies</strong> (<em>numpy.array</em>) – Orbitals energies of the kernel orbitals.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>correlation_energy</strong> – Correlation energy of the span_orbitals.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="embedding_methods.Psi4Embed.count_active_aos">
+<code class="sig-name descname">count_active_aos</code><span class="sig-paren">(</span><em class="sig-param">basis</em><span class="sig-paren">)</span><a class="headerlink" href="#embedding_methods.Psi4Embed.count_active_aos" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the number of AOs from active atoms.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>basis</strong> (<em>str</em>) – Name of basis set from which to count active AOs.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>self.n_active_aos</strong> – Number of AOs in the active atoms.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="embedding_methods.Psi4Embed.count_shells">
+<code class="sig-name descname">count_shells</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#embedding_methods.Psi4Embed.count_shells" title="Permalink to this definition">¶</a></dt>
+<dd><p>Guarantees the correct number of shells are computed.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p><ul class="simple">
+<li><p><strong>max_shell</strong> (<em>int</em>) – Maximum number of virtual shells.</p></li>
+<li><p><strong>self.n_virtual_shell</strong> (<em>int</em>) – Number of virtual shells.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="embedding_methods.Psi4Embed.determinant_overlap">
+<code class="sig-name descname">determinant_overlap</code><span class="sig-paren">(</span><em class="sig-param">orbitals</em>, <em class="sig-param">beta_orbitals=None</em><span class="sig-paren">)</span><a class="headerlink" href="#embedding_methods.Psi4Embed.determinant_overlap" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the overlap between determinants formed from the
+provided orbitals and the embedded orbitals</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>orbitals</strong> (<em>numpy.array</em>) – Orbitals to compute the overlap with embedded orbitals.</p></li>
+<li><p><strong>beta_orbitals</strong> (<em>numpy.array</em><em> (</em><em>None</em><em>)</em>) – Beta orbitals, if running with references other than RHF.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="embedding_methods.Psi4Embed.effective_virtuals">
+<code class="sig-name descname">effective_virtuals</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#embedding_methods.Psi4Embed.effective_virtuals" title="Permalink to this definition">¶</a></dt>
+<dd><p>Slices the effective virtuals from the entire virtual space.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p><strong>effective_orbitals</strong> – Virtual orbitals without the level-shifted orbitals
+from the environment.</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>numpy.array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="embedding_methods.Psi4Embed.heatmap">
+<code class="sig-name descname">heatmap</code><span class="sig-paren">(</span><em class="sig-param">span_orbitals</em>, <em class="sig-param">kernel_orbitals</em>, <em class="sig-param">shell</em><span class="sig-paren">)</span><a class="headerlink" href="#embedding_methods.Psi4Embed.heatmap" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates heatmap file from orbitals at the i-th shell.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>span_orbitals</strong> (<em>numpy.array</em>) – Span orbitals.</p></li>
+<li><p><strong>kernel_orbitals</strong> (<em>numpy.array</em>) – Kernel orbitals.</p></li>
+<li><p><strong>shell</strong> (<em>int</em>) – Shell index.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="embedding_methods.Psi4Embed.molden">
+<code class="sig-name descname">molden</code><span class="sig-paren">(</span><em class="sig-param">shell_orbitals</em>, <em class="sig-param">shell</em><span class="sig-paren">)</span><a class="headerlink" href="#embedding_methods.Psi4Embed.molden" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates molden file from orbitals at the shell.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>span_orbitals</strong> (<em>numpy.array</em>) – Span orbitals.</p></li>
+<li><p><strong>shell</strong> (<em>int</em>) – Shell index.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="embedding_methods.Psi4Embed.open_shell_subsystem">
+<code class="sig-name descname">open_shell_subsystem</code><span class="sig-paren">(</span><em class="sig-param">alpha_orbitals</em>, <em class="sig-param">beta_orbitals</em><span class="sig-paren">)</span><a class="headerlink" href="#embedding_methods.Psi4Embed.open_shell_subsystem" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the potential matrices J, K, and V and subsystem
+energies for open shell cases.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>alpha_orbitals</strong> (<em>numpy.array</em>) – Alpha MO coefficients.</p></li>
+<li><p><strong>beta_orbitals</strong> (<em>numpy.array</em>) – Beta MO coefficients.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>e</strong> (<em>float</em>) – Total energy of subsystem.</p></li>
+<li><p><strong>e_xc</strong> (<em>float</em>) – Exchange-correlation energy of subsystem.</p></li>
+<li><p><strong>alpha_j</strong> (<em>numpy.array</em>) – Alpha Coulomb matrix of subsystem.</p></li>
+<li><p><strong>beta_j</strong> (<em>numpy.array</em>) – Beta Coulomb matrix of subsystem.</p></li>
+<li><p><strong>alpha_k</strong> (<em>numpy.array</em>) – Alpha Exchange matrix of subsystem.</p></li>
+<li><p><strong>beta_k</strong> (<em>numpy.array</em>) – Beta Exchange matrix of subsystem.</p></li>
+<li><p><strong>alpha_v_xc</strong> (<em>numpy.array</em>) – Alpha Kohn-Sham potential matrix of subsystem.</p></li>
+<li><p><strong>beta_v_xc</strong> (<em>numpy.array</em>) – Beta Kohn-Sham potential matrix of subsystem.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="embedding_methods.Psi4Embed.orthonormalize">
+<code class="sig-name descname">orthonormalize</code><span class="sig-paren">(</span><em class="sig-param">S</em>, <em class="sig-param">C</em>, <em class="sig-param">n_non_zero</em><span class="sig-paren">)</span><a class="headerlink" href="#embedding_methods.Psi4Embed.orthonormalize" title="Permalink to this definition">¶</a></dt>
+<dd><p>(Deprecated) Orthonormalizes a set of orbitals (vectors).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>S</strong> (<em>numpy.array</em>) – Overlap matrix in AO basis.</p></li>
+<li><p><strong>C</strong> (<em>numpy.array</em>) – MO coefficient matrix, vectors to be orthonormalized.</p></li>
+<li><p><strong>n_non_zero</strong> (<em>int</em>) – Number of orbitals that have non-zero norm.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>C_orthonormal</strong> – Set of n_non_zero orthonormal orbitals.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>numpy.array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="embedding_methods.Psi4Embed.pseudocanonical">
+<code class="sig-name descname">pseudocanonical</code><span class="sig-paren">(</span><em class="sig-param">orbitals</em><span class="sig-paren">)</span><a class="headerlink" href="#embedding_methods.Psi4Embed.pseudocanonical" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns pseudocanonical orbitals and the corresponding
+orbital energies.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>orbitals</strong> (<em>numpy.array</em>) – MO coefficients of orbitals to be pseudocanonicalized.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>e_orbital_pseudo</strong> (<em>numpy.array</em>) – diagonal elements of the Fock matrix in the
+pseudocanonical basis.</p></li>
+<li><p><strong>pseudo_orbitals</strong> (<em>numpy.array</em>) – pseudocanonical orbitals.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="embedding_methods.Psi4Embed.run_psi4">
+<code class="sig-name descname">run_psi4</code><span class="sig-paren">(</span><em class="sig-param">level=None</em><span class="sig-paren">)</span><a class="headerlink" href="#embedding_methods.Psi4Embed.run_psi4" title="Permalink to this definition">¶</a></dt>
+<dd><p>Runs Psi4 (PySCF is coming soon).
+If ‘level’ is not provided, it runs the a calculation at the level
+given by the ‘low_level’ key in self.keywords.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>level</strong> (<em>str</em><em> (</em><em>None</em><em>)</em>) – Level of theory to run calculation.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+        </div>
+        <div class="sidebar">
+          <h3>Table of Contents</h3>
+          
+          <div role="search">
+            <h3 style="margin-top: 1.5em;">Search</h3>
+            <form class="search" action="search.html" method="get">
+                <input type="text" name="q" />
+                <input type="submit" value="Go" />
+            </form>
+          </div>
+        </div>
+        <div class="clearer"></div>
+      </div>
+    </div>
+
+    <div class="footer-wrapper">
+      <div class="footer">
+        <div class="left">
+          <div role="navigation" aria-label="related navigaton">
+            <a href="py-modindex.html" title="Python Module Index"
+              >modules</a> |
+            <a href="genindex.html" title="General Index"
+              >index</a>
+          </div>
+          <div role="note" aria-label="source link">
+              <br/>
+              <a href="_sources/embedding_methods.rst.txt"
+                rel="nofollow">Show Source</a>
+          </div>
+        </div>
+
+        <div class="right">
+          
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2019, Daniel Claudino.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.2.0.
+    </div>
+        </div>
+        <div class="clearer"></div>
+      </div>
+    </div>
+
+  </body>
+</html>

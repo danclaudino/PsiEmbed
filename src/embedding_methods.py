@@ -7,11 +7,12 @@ class Embed:
     """ Class with package-independent embedding methods."""
 
     def __init__(self, keywords):
-        """Initialize the Embed class.
+        """
+        Initialize the Embed class.
 
-        Args:
-            keywords (dict): dictionary with embedding options.
-            mol (Psi4 molecule object): the molecule object.
+        Parameters
+        ----------
+        keywords (dict): dictionary with embedding options.
         """
         self.keywords = keywords
         self.correlation_energy_shell = []
@@ -21,33 +22,46 @@ class Embed:
 
     @staticmethod
     def dot(A, B):
-        """ Computes the trace (dot product) of matrices A and B
+        """
+        (Deprecated) Computes the trace (dot or Hadamard product) 
+        of matrices A and B.
+        This has now been replaced by a lambda function in 
+        embedding_module.py.
 
-        Args:
-            A, B (numpy.array): matrices to compute tr(A*B)
+        Parameters
+        ----------
+        A : numpy.array
+        B : numpy.array
 
-        Returns:
-            The trace (dot product) of A * B
+        Returns
+        -------
+        The trace (dot product) of A * B
+
         """
         return np.einsum('ij, ij', A, B)
 
     def orbital_rotation(self, orbitals, n_active_aos, ao_overlap = None):
-        """SVD orbitals projected onto active AOs to rotate orbitals.
+        """
+        SVD orbitals projected onto active AOs to rotate orbitals.
 
         If ao_overlap is not provided, C is assumed to be in an
-            orthogonal basis.
+        orthogonal basis.
         
-        Args:
-            orbitals (numpy.array): MO coefficient matrix.
-            n_active_aos (int): number of atomic orbitals in the
-                active atoms.
-            ao_overlap (numpy.array): AO overlap matrix.
+        Parameters
+        ----------
+        orbitals : numpy.array
+            MO coefficient matrix.
+        n_active_aos : int
+            Number of atomic orbitals in the active atoms.
+        ao_overlap : numpy.array (None)
+            AO overlap matrix.
 
-        Returns:
-            rotation_matrix (numpy.array): matrix to rotate orbitals
-                right singular vectors of projected orbitals.
-            singular_values (numpy.array): singular vectors of
-                projected orbitals.
+        Returns
+        -------
+        rotation_matrix : numpy.array
+            Matrix to rotate orbitals.
+        singular_values : numpy.array
+            Singular values.
         """
         if ao_overlap is None:
             orthogonal_orbitals = orbitals[:n_active_aos, :]
@@ -65,15 +79,23 @@ class Embed:
         Partition the orbital space by SPADE or all AOs in the
         projection basis. Beta variables are only used for open shells.
 
-        Args:
-            sigma (numpy.array): (alpha) singular values.
-            beta_sigma (numpy.array): beta singular values.
+        Parameters
+        ----------
+        sigma : numpy.array
+            Singular values.
+        beta_sigma : numpy.array (None)
+            Beta singular values.
 
-        Returns:
-            self.n_act_mos (int) = (alpha) number of active MOs.
-            self.n_env_mos (int) = (alpha) number of environment MOs.
-            self.beta_n_act_mos (int) = beta number of active MOs.
-            self.beta_n_env_mos (int) = beta number of environment MOs.
+        Returns
+        -------
+        self.n_act_mos : int
+            (alpha) number of active MOs.
+        self.n_env_mos : int
+            (alpha) number of environment MOs.
+        self.beta_n_act_mos : int
+            Beta number of active MOs.
+        self.beta_n_env_mos : int
+            Beta number of environment MOs.
         """
         if self.keywords['partition_method'] == 'spade':
             delta_s = [-(sigma[i+1] - sigma[i]) for i in range(len(sigma) - 1)]
@@ -85,7 +107,7 @@ class Embed:
             self.n_act_mos = self.n_active_aos
             self.n_env_mos = len(sigma) - self.n_act_mos
 
-        if self.keywords['reference'] == 'rhf':
+        if self.keywords['low_level_reference'] == 'rhf':
             return self.n_act_mos, self.n_env_mos
         else:
             assert beta_sigma is not None, 'Provide beta singular values'
@@ -108,7 +130,7 @@ class Embed:
         self.outfile.write(' ' + 65*'-' + '\n')
         self.outfile.write('                          PsiEmbed\n\n')
         self.outfile.write('                   Python Stack for Improved\n')
-        self.outfile.write('  and Efficient Methods and Benchmarking in' 
+        self.outfile.write('  and Efficient Methods and Benchmarking in'
                             + ' Embedding Development\n\n')
         self.outfile.write('                       Daniel Claudino\n')
         self.outfile.write('                       September  2019\n')
@@ -124,17 +146,26 @@ class Embed:
             self.outfile.write('     SPADE partition:\n')
             self.outfile.write('     D. Claudino, N.J. Mayhall,\n')
             self.outfile.write('     J. Chem. Theory Comput. 2019, 15, 1053.\n')
+        self.outfile.write('\n\n')
+        self.outfile.write(' ' + 65*'-' + '\n\n')
         return None
 
     def print_scf(self, e_act, e_env, two_e_cross, e_act_emb, correction):
-        """Prints mean-field info from before and after embedding.
+        """
+        Prints mean-field info from before and after embedding.
 
-        Args:
-            e_act (float): energy of the active subsystem.
-            e_env (float): energy of the environment subsystem.
-            two_e_cross (float): intersystem interaction energy.
-            e_act_emb (float): energy of the embedded active subsystem.
-            correction (float): correction from the embedded density.
+        Parameters
+        ----------
+        e_act : float
+            Energy of the active subsystem.
+        e_env : float
+            Energy of the environment subsystem.
+        two_e_cross : float
+            Intersystem interaction energy.
+        e_act_emb : float
+            Energy of the embedded active subsystem.
+        correction : float
+            Correction from the embedded density.
         """
         self.outfile.write('\n\n Energy values in atomic units\n')
         self.outfile.write(' Embedded calculation: '
@@ -195,10 +226,13 @@ class Embed:
         return None
 
     def print_summary(self, e_mf_emb):
-        """Prints summary of CL shells.
+        """
+        Prints summary of CL shells.
 
-        Args:
-            e_mf_emb (float): mean-field embedded energy.
+        Parameters
+        ----------
+        e_mf_emb : float
+            Mean-field embedded energy.
         """
         self.outfile.write('\n Summary of virtual shell energy convergence\n\n')
         self.outfile.write('{:^8} \t {:^8} \t {:^12} \t {:^16}\n'.format(
@@ -230,11 +264,15 @@ class Embed:
         return None
     
     def print_sigma(self, sigma, ishell):
-        """ Formats the printing of singular values for the PRIME shells.
+        """
+        Formats the printing of singular values from the CL shells.
 
-        Args:
-            sigma (numpy.array or list): singular values.
-            ishell (int): CL shell index.
+        Parameters
+        ----------
+        sigma : numpy.array or list
+            Singular values.
+        ishell :int
+            CL shell index.
         """
         self.outfile.write('\n{:>10} {:>2d}\n'.format('Shell #', ishell))
         self.outfile.write('  ------------\n')
@@ -249,19 +287,17 @@ class Psi4Embed(Embed):
     """Class with embedding methods using Psi4."""
 
     def run_psi4(self, level = None):
-        """Runs Psi4 (PySCF is coming soon).
-
-        Args:
-            level (str): level of theory to run calculation.
         """
-        if hasattr(self, '_mol'):
-            psi4.set_options({'docc': [self.n_act_mos]
-                'reference': self.keywords['high_level_reference']})
-            if (self.keywords['high_level'][:2] == 'cc' and
-                self.keywords['cc_type'] == 'df'):
-                psi4.set_options({'cc_type': self.keywords['cc_type'],
-                                'df_ints_io': 'save' })
-        else:
+        Runs Psi4 (PySCF is coming soon).
+        If 'level' is not provided, it runs the a calculation at the level
+        given by the 'low_level' key in self.keywords.
+
+        Parameters
+        ----------
+        level : str (None)
+            Level of theory to run calculation.
+        """
+        if level == None:
             # Preparing molecule string with C1 symmetry
             add_c1 = self.keywords['geometry'].splitlines()
             add_c1.append('symmetry c1')
@@ -274,9 +310,9 @@ class Psi4Embed(Embed):
             self._mol.set_molecular_charge(self.keywords['charge'])
             self._mol.set_multiplicity(self.keywords['multiplicity'])
 
-        psi4.core.be_quiet()
-        psi4.core.set_output_file(self.keywords['driver_output'], True)
-        psi4.set_options({'save_jk': 'true',
+            psi4.core.be_quiet()
+            psi4.core.set_output_file(self.keywords['driver_output'], True)
+            psi4.set_options({'save_jk': 'true',
                         'basis': self.keywords['basis'],
                         'reference': self.keywords['low_level_reference'],
                         'ints_tolerance': self.keywords['ints_tolerance'],
@@ -289,20 +325,19 @@ class Psi4Embed(Embed):
                         'soscf': self.keywords['low_level_soscf']
                         })
 
-        if level == None:
             self.e, self._wfn = psi4.energy(self.keywords['low_level'],
                 molecule = self._mol, return_wfn=True)
             self._n_basis_functions = self._wfn.basisset().nbf()
             if self.keywords['low_level'] != 'HF' :
                 self.e_xc_total = psi4.core.VBase.quadrature_values\
                             (self._wfn.V_potential())["FUNCTIONAL"]
-                if self.keywords['reference'] == 'rhf':
+                if self.keywords['low_level_reference'] == 'rhf':
                     self.v_xc_total = self._wfn.Va().clone().np
                 else:
                     self.alpha_v_xc_total = self._wfn.Va().clone().np
                     self.beta_v_xc_total = self._wfn.Vb().clone().np
             else:
-                if self.keywords['reference'] == 'rhf':
+                if self.keywords['low_level_reference'] == 'rhf':
                     self.v_xc_total = np.zeros([self._n_basis_functions,
                         self._n_basis_functions])
                 else:
@@ -312,10 +347,16 @@ class Psi4Embed(Embed):
                         self._n_basis_functions])
                 self.e_xc_total = 0.0
         else:
+            psi4.set_options({'docc': [self.n_act_mos],
+                'reference': self.keywords['high_level_reference']})
+            if (self.keywords['high_level'][:2] == 'cc' and
+                self.keywords['cc_type'] == 'df'):
+                psi4.set_options({'cc_type': self.keywords['cc_type'],
+                                'df_ints_io': 'save' })
             self.e, self._wfn = psi4.energy('hf',
                 molecule = self._mol, return_wfn=True)
 
-        if self.keywords['reference'] == 'rhf':
+        if self.keywords['low_level_reference'] == 'rhf':
             self.occupied_orbitals = self._wfn.Ca_subset('AO', 'OCC').np
             self.j = self._wfn.jk().J()[0].np
             self.k = self._wfn.jk().K()[0].np
@@ -334,14 +375,18 @@ class Psi4Embed(Embed):
         return None
 
     def count_active_aos(self, basis):
-        """Computes the number of AOs from active atoms.
+        """
+        Computes the number of AOs from active atoms.
 
-        Args:
-            basis (str): name of basis set from which to count
-                active AOs.
+        Parameters
+        ----------
+        basis : str
+            Name of basis set from which to count active AOs.
         
-        Returns:
-            self.n_active_aos (int): number of AOs in the active atoms.
+        Returns
+        -------
+            self.n_active_aos : int
+                Number of AOs in the active atoms.
         """
         if basis == self.keywords['basis']:
             basis = self._wfn.basisset()
@@ -360,16 +405,20 @@ class Psi4Embed(Embed):
         return self.n_active_aos
         
     def basis_projection(self, orbitals, projection_basis):
-        """Defines a projection of orbitals in one basis onto another.
+        """
+        Defines a projection of orbitals in one basis onto another.
         
-        Args:
-            orbitals (numpy.array): MO coefficients to be projected.
-            projection_basis (str): name of basis set onto which
-                orbitals are to be projected.
+        Parameters
+        ----------
+        orbitals : numpy.array
+            MO coefficients to be projected.
+        projection_basis : str
+            Name of basis set onto which orbitals are to be projected.
 
-        Returns:
-            projected_orbitals (numpy.array): MO coefficients of
-                orbitals projected onto projection_basis.
+        Returns
+        -------
+        projected_orbitals : numpy.array
+            MO coefficients of orbitals projected onto projection_basis.
         """
         projected_wfn = psi4.core.Wavefunction.build(self._mol,
             projection_basis)
@@ -386,15 +435,23 @@ class Psi4Embed(Embed):
         """
         Computes the potential matrices J, K, and V and subsystem energies.
 
-        Args:
-            orbitals (numpy.array): MO coefficients of subsystem.
+        Parameters
+        ----------
+        orbitals : numpy.array
+            MO coefficients of subsystem.
 
-        Returns:
-            e (float): total energy of subsystem.
-            e_xc (float): (DFT) Exchange-correlation energy of subsystem.
-            j (numpy.array): Coulomb matrix of subsystem.
-            k (numpy.array): Exchange matrix of subsystem.
-            v_xc (numpy.array): Kohn-Sham potential matrix of subsystem.
+        Returns
+        -------
+        e : float
+            Total energy of subsystem.
+        e_xc : float
+            DFT Exchange-correlation energy of subsystem.
+        j : numpy.array
+            Coulomb matrix of subsystem.
+        k : numpy.array
+            Exchange matrix of subsystem.
+        v_xc : numpy.array
+            Kohn-Sham potential matrix of subsystem.
         """
 
         density = orbitals @ orbitals.T
@@ -433,17 +490,22 @@ class Psi4Embed(Embed):
         return e, e_xc, j, k, v_xc
 
     def pseudocanonical(self, orbitals):
-        """Returns pseudocanonical orbitals and the corresponding
-            orbital energies.
+        """
+        Returns pseudocanonical orbitals and the corresponding
+        orbital energies.
         
-        Args:
-            orbitals (numpy.array): MO coefficients of orbitals to be
-                pseudocanonicalized.
+        Parameters
+        ----------
+        orbitals : numpy.array
+            MO coefficients of orbitals to be pseudocanonicalized.
 
-        Returns:
-            e_orbital_pseudo (numpy.array): diagonal elements of the
-                Fock matrix in the pseudocanonical basis.
-            pseudo_orbitals (numpy.array): pseudocanonical orbitals.
+        Returns
+        -------
+        e_orbital_pseudo : numpy.array
+            diagonal elements of the Fock matrix in the
+            pseudocanonical basis.
+        pseudo_orbitals : numpy.array
+            pseudocanonical orbitals.
         """
         mo_fock = orbitals.T @ self._wfn.Fa().np @ orbitals
         e_orbital_pseudo, pseudo_transformation = np.linalg.eigh(mo_fock)
@@ -451,19 +513,27 @@ class Psi4Embed(Embed):
         return e_orbital_pseudo, pseudo_orbitals
 
     def ao_operator(self):
-        """Returns the matrix representation of the operator chosen to
-            construct the shells.
-        
-        Returns:
+        """
+        Returns the matrix representation of the operator chosen to
+        construct the shells.
 
-            K (numpy.array): exchange.
-            V (numpy.array): electron-nuclei potential.
-            T (numpy.array): kinetic energy.
-            H (numpy.array): core Hamiltonian.
-            S (numpy.array): overlap matrix.
-            F (numpy.array): Fock matrix.
-            K_orb (numpy.array): K orbitals
-                (see Feller and Davidson, JCP, 74, 3977 (1981)).
+        Returns
+        -------
+
+        K : numpy.array
+            Exchange.
+        V : numpy.array
+            Electron-nuclei potential.
+        T : numpy.array
+            Kinetic energy.
+        H : numpy.array
+            Core (one-particle) Hamiltonian.
+        S : numpy.array
+            Overlap matrix.
+        F : numpy.array
+            Fock matrix.
+        K_orb : numpy.array
+            K orbitals (see Feller and Davidson, JCP, 74, 3977 (1981)).
         """
         if (self.keywords['operator'] == 'K' or
             self.keywords['operator'] == 'K_orb'):
@@ -497,21 +567,31 @@ class Psi4Embed(Embed):
         Computes the potential matrices J, K, and V and subsystem
         energies for open shell cases.
 
-        Args:
-            alpha_orbitals (numpy.array): alpha MO coefficients.
-            beta_orbitals (numpy.array): beta MO coefficients.
+        Parameters
+        ----------
+        alpha_orbitals : numpy.array
+            Alpha MO coefficients.
+        beta_orbitals : numpy.array
+            Beta MO coefficients.
 
-        Returns:
-            e (float): total energy of subsystem.
-            e_xc (float): Exchange-correlation energy of subsystem.
-            alpha_j (numpy.array): alpha Coulomb matrix of subsystem.
-            beta_j (numpy.array): beta Coulomb matrix of subsystem.
-            alpha_k (numpy.array): alpha Exchange matrix of subsystem.
-            beta_k (numpy.array): beta Exchange matrix of subsystem.
-            alpha_v_xc (numpy.array): alpha Kohn-Sham potential matrix
-                of subsystem.
-            beta_v_xc (numpy.array): beta Kohn-Sham potential matrix
-                of subsystem.
+        Returns
+        -------
+        e : float
+            Total energy of subsystem.
+        e_xc : float
+            Exchange-correlation energy of subsystem.
+        alpha_j : numpy.array
+            Alpha Coulomb matrix of subsystem.
+        beta_j : numpy.array
+            Beta Coulomb matrix of subsystem.
+        alpha_k : numpy.array
+            Alpha Exchange matrix of subsystem.
+        beta_k : numpy.array
+            Beta Exchange matrix of subsystem.
+        alpha_v_xc : numpy.array
+            Alpha Kohn-Sham potential matrix of subsystem.
+        beta_v_xc : numpy.array
+            Beta Kohn-Sham potential matrix of subsystem.
         """
         alpha_density = alpha_orbitals @ alpha_orbitals.T
         beta_density = beta_orbitals @ beta_orbitals.T
@@ -554,15 +634,22 @@ class Psi4Embed(Embed):
         return e, e_xc, alpha_j, beta_j, alpha_k, beta_k, alpha_v_xc, beta_v_xc
 
     def orthonormalize(self, S, C, n_non_zero):
-        """(Deprecated) Orthonormalizes a set of orbitals (vectors).
+        """
+        (Deprecated) Orthonormalizes a set of orbitals (vectors).
 
-        Args:
-            S (numpy.array): overlap matrix in AO basis.
-            C (numpy.array): MO coefficient matrix (vectors to be orthonormalized).
-            n_non_zero (int): number of orbitals that have non-zero norm.
+        Parameters
+        ----------
+        S : numpy.array
+            Overlap matrix in AO basis.
+        C : numpy.array
+            MO coefficient matrix, vectors to be orthonormalized.
+        n_non_zero : int
+            Number of orbitals that have non-zero norm.
 
-        Returns:
-            C_orthonormal (numpy.array): set of n_non_zero orthonormal orbitals.
+        Returns
+        -------
+        C_orthonormal : numpy.array
+            Set of n_non_zero orthonormal orbitals.
         """
 
         overlap = C.T @ S @ C
@@ -576,23 +663,32 @@ class Psi4Embed(Embed):
         return C_orthonormal[:,:n_non_zero]
 
     def molden(self, shell_orbitals, shell):
-        """Creates molden file from orbitals at the shell.
+        """
+        Creates molden file from orbitals at the shell.
 
-        Args:
-            span_orbitals (numpy.array): span orbitals.
-            shell (int): shell index.
+        Parameters
+        ----------
+        span_orbitals : numpy.array
+            Span orbitals.
+        shell : int
+            Shell index.
         """
         self._wfn.Ca().copy(psi4.core.Matrix.from_array(shell_orbitals))
         psi4.driver.molden(self._wfn, str(shell) + '.molden')
         return None
 
     def heatmap(self, span_orbitals, kernel_orbitals, shell):
-        """Creates heatmap file from orbitals at the i-th shell.
+        """
+        Creates heatmap file from orbitals at the i-th shell.
 
-        Args:
-            span_orbitals (numpy.array): span orbitals.
-            kernel_orbitals (numpy.array): kernel orbitalss.
-            shell (int): shell index.
+        Parameters
+        ----------
+        span_orbitals : numpy.array
+            Span orbitals.
+        kernel_orbitals : numpy.array
+            Kernel orbitals.
+        shell : int
+            Shell index.
         """
         orbitals = np.hstack((span_orbitals, kernel_orbitals))
         mo_operator = orbitals.T @ self.operator @ orbitals
@@ -604,13 +700,14 @@ class Psi4Embed(Embed):
         Compute the overlap between determinants formed from the
         provided orbitals and the embedded orbitals
 
-        Args:
-            orbitals (numpy.array): orbitals to compute the overlap
-                with embedded orbitals.
-            beta_orbitals (numpy.array): beta orbitals, if running
-                with references other then rhf.
+        Parameters
+        ----------
+        orbitals : numpy.array
+            Orbitals to compute the overlap with embedded orbitals.
+        beta_orbitals : numpy.array (None)
+            Beta orbitals, if running with references other than RHF.
         """
-        if self.keywords['reference'] == 'rhf' and beta_orbitals == None:
+        if self.keywords['high_level_reference'] == 'rhf' and beta_orbitals == None:
             overlap = self.occupied_orbitals.T @ self.ao_overlap @ orbitals
             u, s, vh = np.linalg.svd(overlap)
             self.determinant_overlap = (
@@ -635,19 +732,21 @@ class Psi4Embed(Embed):
         Computes the correlation energy for the current set of active
         virtual orbitals.
         
-        Args:
-            span_orbitals (numpy.array): orbitals transformed by the
-                span of the previous shell.
-            kernel_orbitals (numpy.array): orbitals transformed by the
-                kernel of the previous shell.
-            span_orbital_energies (nmpy.array): orbitals energies
-                of the span orbitals.
-            kernel_orbital_energies (nmpy.array): orbitals energies
-                of the kernel orbitals.
+        Parameters
+        ----------
+        span_orbitals : numpy.array
+            Orbitals transformed by the span of the previous shell.
+        kernel_orbitals : numpy.array
+            Orbitals transformed by the kernel of the previous shell.
+        span_orbital_energies : numpy.array
+            Orbitals energies of the span orbitals.
+        kernel_orbital_energies : numpy.array
+            Orbitals energies of the kernel orbitals.
 
-        Returns:
-            correlation_energy (float): correlation energy of the
-                span_orbitals.
+        Returns
+        -------
+        correlation_energy : float
+            Correlation energy of the span_orbitals.
         """
         shift = self._n_basis_functions - self.n_env_mos
         if span_orbitals is None:
@@ -679,22 +778,29 @@ class Psi4Embed(Embed):
         return correlation_energy
 
     def effective_virtuals(self):
-        """Slices the effective virtuals from the entire virtual space.
+        """
+        Slices the effective virtuals from the entire virtual space.
 
-        Returns:
-            effective_orbitals (numpy.array): virtual orbitals without
-                the level-shifted orbitals from the environment.
+        Returns
+        -------
+        effective_orbitals : numpy.array
+            Virtual orbitals without the level-shifted orbitals
+            from the environment.
         """
         shift = self._n_basis_functions - self.n_env_mos
         effective_orbitals = self._wfn.Ca().np[:, self.n_act_mos:shift]
         return effective_orbitals
 
     def count_shells(self):
-        """Guarantees the correct number of shells are computed.
+        """
+        Guarantees the correct number of shells are computed.
 
-        Returns:
-            max_shell (int): maximum number of virtual shells.
-            self.n_virtual_shell (int): number of virtual shells.
+        Returns
+        -------
+        max_shell : int
+            Maximum number of virtual shells.
+        self.n_virtual_shell : int
+            Number of virtual shells.
         """
         effective_dimension = (self._n_basis_functions - self.n_act_mos
                             - self.n_env_mos)
