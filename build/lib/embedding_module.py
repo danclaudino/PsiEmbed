@@ -3,7 +3,17 @@ import psi4
 import numpy as np
 import embedding_methods
 
+matrix_dot = lambda A, B: np.einsum('ij,ij', A, B)
+
 def run_closed_shell(keywords):
+    """
+    Runs embedded calculation for closed shell references.
+
+    Parameters
+    ----------
+    keywords: dict
+        Options to control embedded calculations.
+    """
 
     if keywords['package'].lower() == 'psi4':
         embed = embedding_methods.Psi4Embed(keywords)
@@ -42,10 +52,10 @@ def run_closed_shell(keywords):
             embed.closed_shell_subsystem(env_orbitals))
 
     # Computing cross subsystem terms
-    j_cross = 2.0*(embed.dot(act_density, j_env)
-            + embed.dot(env_density, j_act))
-    k_cross = -embed.alpha*(embed.dot(act_density, k_env)
-            + embed.dot(env_density, k_act))
+    j_cross = 2.0*(matrix_dot(act_density, j_env)
+            + matrix_dot(env_density, j_act))
+    k_cross = -embed.alpha*(matrix_dot(act_density, k_env)
+            + matrix_dot(env_density, k_act))
     xc_cross = embed.e_xc_total - e_xc_act - e_xc_env
     two_e_cross = j_cross + k_cross + xc_cross
 
@@ -108,8 +118,8 @@ def run_closed_shell(keywords):
     density_emb = embed.occupied_orbitals @ embed.occupied_orbitals.T
     j_emb = embed.j
     k_emb = embed.k
-    e_act_emb = embed.dot(density_emb, 2*h_core + 2*j_emb - k_emb)
-    correction = 2.0*(embed.dot(h_core_emb - h_core,
+    e_act_emb = matrix_dot(density_emb, 2*h_core + 2*j_emb - k_emb)
+    correction = 2.0*(matrix_dot(h_core_emb - h_core,
         density_emb - act_density))
     e_mf_emb = e_act_emb + e_env + two_e_cross + embed.nre + correction
     embed.print_scf(e_act, e_env, two_e_cross, e_act_emb, correction)
@@ -126,7 +136,7 @@ def run_closed_shell(keywords):
         embed.outfile.write('\n Singular values of '
             + str(keywords['n_virtual_shell'] + 1) + ' virtual shells\n')
         embed.outfile.write(' Shells constructed with the %s operator\n'.
-            format(keywords['operator_name']))
+            format(keywords['operator']))
 
         # First virtual shell
         n_act_aos = embed.count_active_aos(keywords['virtual_projection_basis'])
@@ -208,7 +218,7 @@ def run_closed_shell(keywords):
                 format(virtual_span.shape[1], e_mf_emb + e_correlation))
 
         embed.print_summary(e_mf_emb)
-        projected_env_correction = embed.dot(projector,
+        projected_env_correction = matrix_dot(projector,
             act_density - density_emb)
         embed.outfile.write(' Correction from the projected B\t = {:>16.2e}\n'.
             format(projected_env_correction))
@@ -216,6 +226,14 @@ def run_closed_shell(keywords):
     os.system('rm newH.dat')
     
 def run_open_shell(keywords):
+    """
+    Runs embedded calculation for closed shell references.
+
+    Parameters
+    ----------
+    keywords: dict
+        Options to control embedded calculations.
+    """
 
     if keywords['package'].lower() == 'psi4':
         embed = embedding_methods.Psi4Embed(keywords)
@@ -271,18 +289,18 @@ def run_open_shell(keywords):
             embed.open_shell_subsystem(alpha_env_orbitals, beta_env_orbitals))
 
     # Computing cross subsystem terms
-    j_cross = 0.5*(embed.dot(alpha_j_act, alpha_env_density)
-            + embed.dot(alpha_j_act, beta_env_density)
-            + embed.dot(beta_j_act, alpha_env_density)
-            + embed.dot(beta_j_act, beta_env_density)
-            + embed.dot(alpha_j_env, alpha_act_density)
-            + embed.dot(alpha_j_env, beta_act_density)
-            + embed.dot(beta_j_env, alpha_act_density)
-            + embed.dot(beta_j_env, beta_act_density))
-    k_cross = -0.5*embed.alpha*(embed.dot(alpha_k_act, alpha_env_density)
-            + embed.dot(beta_k_act, beta_env_density)
-            + embed.dot(alpha_k_env, alpha_act_density)
-            + embed.dot(beta_k_env, beta_act_density))
+    j_cross = 0.5*(matrix_dot(alpha_j_act, alpha_env_density)
+            + matrix_dot(alpha_j_act, beta_env_density)
+            + matrix_dot(beta_j_act, alpha_env_density)
+            + matrix_dot(beta_j_act, beta_env_density)
+            + matrix_dot(alpha_j_env, alpha_act_density)
+            + matrix_dot(alpha_j_env, beta_act_density)
+            + matrix_dot(beta_j_env, alpha_act_density)
+            + matrix_dot(beta_j_env, beta_act_density))
+    k_cross = -0.5*embed.alpha*(matrix_dot(alpha_k_act, alpha_env_density)
+            + matrix_dot(beta_k_act, beta_env_density)
+            + matrix_dot(alpha_k_env, alpha_act_density)
+            + matrix_dot(beta_k_env, beta_act_density))
     xc_cross = embed.e_xc_total - e_xc_act - e_xc_env
     two_e_cross = j_cross + k_cross + xc_cross
 
@@ -337,13 +355,13 @@ def run_open_shell(keywords):
     alpha_k_emb = embed.alpha_k
     beta_k_emb = embed.beta_k
     h_core = embed.h_core
-    e_act_emb = (embed.dot(alpha_density_emb + beta_density_emb, h_core)
-                + 0.5*embed.dot(alpha_density_emb + beta_density_emb,
+    e_act_emb = (matrix_dot(alpha_density_emb + beta_density_emb, h_core)
+                + 0.5*matrix_dot(alpha_density_emb + beta_density_emb,
                 alpha_j_emb + beta_j_emb)
-                - 0.5*(embed.dot(alpha_density_emb, alpha_k_emb)
-                + embed.dot(beta_density_emb, beta_k_emb)))
-    correction = (embed.dot(alpha_v_emb, alpha_density_emb - alpha_act_density)
-                + embed.dot(beta_v_emb, beta_density_emb - beta_act_density))
+                - 0.5*(matrix_dot(alpha_density_emb, alpha_k_emb)
+                + matrix_dot(beta_density_emb, beta_k_emb)))
+    correction = (matrix_dot(alpha_v_emb, alpha_density_emb - alpha_act_density)
+                + matrix_dot(beta_v_emb, beta_density_emb - beta_act_density))
     e_mf_emb = e_act_emb + e_env + two_e_cross + embed.nre + correction
     embed.print_scf(e_act, e_env, two_e_cross, e_act_emb, correction)
 
@@ -360,7 +378,7 @@ def run_open_shell(keywords):
         embed.outfile.write('\n Singular values of '
             + str(keywords['n_virtual_shell'] + 1) + ' virtual shells\n')
         embed.outfile.write(' Shells constructed with the %s operator\n'.format(
-            keywords['operator_name']))
+            keywords['operator']))
 
         # First virtual shell
         n_act_aos = embed.count_active_aos(keywords['virtual_projection_basis'])
@@ -437,7 +455,7 @@ def run_open_shell(keywords):
                 format(virtual_span.shape[1], e_mf_emb + e_correlation))
 
         embed.print_summary(e_mf_emb)
-        projected_env_correction = embed.dot(projector,
+        projected_env_correction = matrix_dot(projector,
             act_density - density_emb)
         embed.outfile.write(' Correction from the projected B\t = {:>16.2e}\n'.
             format(projected_env_correction))

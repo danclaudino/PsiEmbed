@@ -1,0 +1,140 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>psi_embed module &#8212; PsiEmbed 0.1 documentation</title>
+    <link rel="stylesheet" href="_static/agogo.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" /> 
+  </head><body>
+    <div class="header-wrapper" role="banner">
+      <div class="header">
+        <div class="headertitle"><a
+          href="index.html">PsiEmbed 0.1 documentation</a></div>
+        <div class="rel" role="navigation" aria-label="related navigation">
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a>
+        </div>
+       </div>
+    </div>
+
+    <div class="content-wrapper">
+      <div class="content">
+        <div class="document">
+            
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-psi_embed">
+<span id="psi-embed-module"></span><h1>psi_embed module<a class="headerlink" href="#module-psi_embed" title="Permalink to this headline">¶</a></h1>
+<dl class="function">
+<dt id="psi_embed.driver">
+<code class="sig-prename descclassname">psi_embed.</code><code class="sig-name descname">driver</code><span class="sig-paren">(</span><em class="sig-param">keywords</em><span class="sig-paren">)</span><a class="headerlink" href="#psi_embed.driver" title="Permalink to this definition">¶</a></dt>
+<dd><p>Checks for the control keywords and calls the
+appropriate embedding routine.
+keywords is of dict type and takes the following keys:</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>package</strong> (<em>str</em><em> (</em><em>Psi4</em><em>)</em>) – Name of the quantum chemical package.
+Psi4 is the only option at present.</p></li>
+<li><p><strong>num_threads</strong> (<em>int</em><em> (</em><em>1</em><em>)</em>) – Number of threads.</p></li>
+<li><p><strong>memory</strong> (<em>str</em><em> (</em><em>'1000 MB'</em><em>)</em>) – Allocated memory.</p></li>
+<li><p><strong>charge</strong> (<em>int</em><em> (</em><em>0</em><em>)</em>) – Molecular charge.</p></li>
+<li><p><strong>multiplicity</strong> (<em>int</em><em> (</em><em>1</em><em>)</em>) – Spin multiplicity.</p></li>
+<li><p><strong>low_level_reference</strong> (<em>str</em><em> (</em><em>'rhf'</em><em>)</em>) – Can be RHF, ROHF (HF only), or UHF.</p></li>
+<li><p><strong>high_level_reference</strong> (<em>str</em><em> (</em><em>'rhf'</em><em>)</em>) – Can be RHF, ROHF (HF only), or UHF.</p></li>
+<li><p><strong>partition_method</strong> (<em>str</em><em> (</em><em>'spade'</em><em>)</em>) – Partition method for the occupied space.</p></li>
+<li><p><strong>e_convergence</strong> (<em>float</em><em> (</em><em>1.0e-6</em><em>)</em>) – SCF energy convergence threshold.</p></li>
+<li><p><strong>d_convergence</strong> (<em>float</em><em> (</em><em>1.0e-6</em><em>)</em>) – SCF density convergence threshold.</p></li>
+<li><p><strong>eri</strong> (<em>str</em><em> (</em><em>'df'</em><em>)</em>) – Algorithm for computing electron repulsion integrals.</p></li>
+<li><p><strong>ints_tolerance</strong> (<em>float</em><em> (</em><em>1.0e-10</em><em>)</em>) – Threshold below which ERI’s are neglected.</p></li>
+<li><p><strong>driver_output</strong> (<em>str</em><em> (</em><em>'output.dat'</em><em>)</em>) – Output file for ‘package’.</p></li>
+<li><p><strong>embedding_output</strong> (<em>str</em>) – Output of the embedded calculation.</p></li>
+<li><p><strong>operator</strong> (<em>str</em><em> (</em><em>'F'</em><em>)</em>) – One-particle operator for CL shells.
+Can be F (Fock), K (exchange), V (electron-nuclei potential),
+H (core Hamiltonian), and K_orb (K-orbitals).</p></li>
+<li><p><strong>level_shift</strong> (<em>float</em><em> (</em><em>1.0e6</em><em>)</em>) – Level shift parameter to orthogonalize subsystems.</p></li>
+<li><p><strong>low_level_damping_percentage</strong> (<em>int</em><em> (</em><em>0</em><em>)</em>) – Percentage of damping in the low level calculation.</p></li>
+<li><p><strong>high_level_damping_percentage</strong> (<em>int</em><em> (</em><em>0</em><em>)</em>) – Percentage of damping in the high level calculation.</p></li>
+<li><p><strong>low_level_soscf</strong> (<em>str</em><em> (</em><em>'false'</em><em>)</em>) – Second order convergence for low level SCF calculation.</p></li>
+<li><p><strong>high_level_soscf</strong> (<em>str</em><em> (</em><em>'false'</em><em>)</em>) – Second order convergence for high level SCF calculation.</p></li>
+<li><p><strong>molden</strong> (<em>bool</em><em> (</em><em>False</em><em>)</em>) – Create the following molden files:
+before_pseudocanonical - active, occupied SPADE orbitals.|
+after_pseudocanonical - pseudocanonical SPADE orbitals.|
+embedded - occupied embedded orbitals.|
+Numbered molden files correspond to CL shells labeled
+by the numbers.</p></li>
+<li><p><strong>print_level</strong> (<em>int</em><em> (</em><em>1</em><em>)</em>) – Amount of printing in output.</p></li>
+<li><p><strong>cc_type</strong> (<em>str</em><em> (</em><em>'df'</em><em>)</em>) – Algorithm for ERI MO transformation for coupled cluster
+calculations.</p></li>
+<li><p><strong>write_embedded_potential</strong> (<em>bool</em><em> (</em><em>False</em><em>)</em>) – Writes embedded potential to embedding_potential.txt in numpy format.</p></li>
+<li><p><strong>write_embedded_h_core</strong> (<em>bool</em><em> (</em><em>False</em><em>)</em>) – Writes embedded core Hamiltonian to embedded_h_core.txt in numpy format.</p></li>
+<li><p><strong>write_embedded_orbitals</strong> (<em>bool</em><em> (</em><em>False</em><em>)</em>) – Writes embedded orbitals to embedded_orbitals.txt in numpy format.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+        </div>
+        <div class="sidebar">
+          <h3>Table of Contents</h3>
+          
+          <div role="search">
+            <h3 style="margin-top: 1.5em;">Search</h3>
+            <form class="search" action="search.html" method="get">
+                <input type="text" name="q" />
+                <input type="submit" value="Go" />
+            </form>
+          </div>
+        </div>
+        <div class="clearer"></div>
+      </div>
+    </div>
+
+    <div class="footer-wrapper">
+      <div class="footer">
+        <div class="left">
+          <div role="navigation" aria-label="related navigaton">
+            <a href="py-modindex.html" title="Python Module Index"
+              >modules</a> |
+            <a href="genindex.html" title="General Index"
+              >index</a>
+          </div>
+          <div role="note" aria-label="source link">
+              <br/>
+              <a href="_sources/psi_embed.rst.txt"
+                rel="nofollow">Show Source</a>
+          </div>
+        </div>
+
+        <div class="right">
+          
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2019, Daniel Claudino.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.2.0.
+    </div>
+        </div>
+        <div class="clearer"></div>
+      </div>
+    </div>
+
+  </body>
+</html>
