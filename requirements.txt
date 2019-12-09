@@ -1,6 +1,3 @@
 scipy==1.1.0
 numpy==1.14.3
-sphinx-build==2.2.0
-sphinx-apidoc==2.2.0
-sphinx-quickstart==2.2.0
-sphinx-autogen==2.2.0
+Sphinx==2.2.0
