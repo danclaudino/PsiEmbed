@@ -1,6 +1,8 @@
 import numpy as np
 import psi4
 import scipy.linalg
+import sys
+from pyscf import gto, dft, scf, lib, mp, cc
 #import os
 
 class Embed:
@@ -17,7 +19,7 @@ class Embed:
         self.keywords = keywords
         self.correlation_energy_shell = []
         self.shell_size = 0
-        self.outfile = open(self.keywords['embedding_output'], 'w')
+        self.outfile = open(keywords['embedding_output'], 'w')
         return None
 
     @staticmethod
@@ -124,17 +126,17 @@ class Embed:
             return (self.n_act_mos, self.n_env_mos, self.beta_n_act_mos,
                     self.beta_n_env_mos)
 
-    def banner(self):
-        """Prints the banner in the output file."""
+    def header(self):
+        """Prints the header in the output file."""
         self.outfile.write('\n')
-        self.outfile.write(' ' + 65*'-' + '\n')
-        self.outfile.write('                          PsiEmbed\n\n')
-        self.outfile.write('                   Python Stack for Improved\n')
-        self.outfile.write('  and Efficient Methods and Benchmarking in'
+        self.outfile.write(' ' + 75*'-' + '\n')
+        self.outfile.write('                               PsiEmbed\n\n')
+        self.outfile.write('                        Python Stack for Improved\n')
+        self.outfile.write('       and Efficient Methods and Benchmarking in'
                             + ' Embedding Development\n\n')
-        self.outfile.write('                       Daniel Claudino\n')
-        self.outfile.write('                       September  2019\n')
-        self.outfile.write(' ' + 65*'-' + '\n')
+        self.outfile.write('                            Daniel Claudino\n')
+        self.outfile.write('                            September  2019\n')
+        self.outfile.write(' ' + 75*'-' + '\n')
         self.outfile.write('\n')
         self.outfile.write(' Main references: \n\n')
         self.outfile.write('     Projection-based embedding:\n')
@@ -145,9 +147,39 @@ class Embed:
         if self.keywords['partition_method'] == 'spade':
             self.outfile.write('     SPADE partition:\n')
             self.outfile.write('     D. Claudino, N.J. Mayhall,\n')
-            self.outfile.write('     J. Chem. Theory Comput. 2019, 15, 1053.\n')
+            self.outfile.write('     J. Chem. Theory Comput. 2019, 15, 1053.\n\n')
+
+        if 'n_cl_shell' in self.keywords.keys():
+            self.outfile.write('     Concentric localization (CL):\n')
+            self.outfile.write('     D. Claudino, N.J. Mayhall,\n')
+            self.outfile.write('     J. Chem. Theory Comput. 2019, 15, 6085.\n\n')
+
+        if self.keywords['package'].lower() == 'psi4':
+            self.outfile.write('     Psi4:\n')
+            self.outfile.write('     R. M. Parrish, L. A. Burns, D. G. A. Smith'
+                + ', A. C. Simmonett, \n')
+            self.outfile.write('     A. E. DePrince III, E. G. Hohenstein'
+                + ', U. Bozkaya, A. Yu. Sokolov,\n')
+            self.outfile.write('     R. Di Remigio, R. M. Richard, J. F. Gonthier'
+                + ', A. M. James,\n') 
+            self.outfile.write('     H. R. McAlexander, A. Kumar, M. Saitow'
+                + ', X. Wang, B. P. Pritchard,\n')
+            self.outfile.write('     P. Verma, H. F. Schaefer III'
+                + ', K. Patkowski, R. A. King, E. F. Valeev,\n')
+            self.outfile.write('     F. A. Evangelista, J. M. Turney,'
+                + 'T. D. Crawford, and C. D. Sherrill,\n')
+            self.outfile.write('     J. Chem. Theory Comput. 2017, 13, 3185.')
+
+        if self.keywords['package'].lower() == 'pyscf':
+            self.outfile.write('     PySCF:\n')
+            self.outfile.write('     Q. Sun, T. C. Berkelbach, N. S. Blunt'
+                + ', G. H. Booth, S. Guo, Z. Li,\n')
+            self.outfile.write('     J. Liu, J. D. McClain, E. R. Sayfutyarova'
+                + ', S. Sharma, S. Wouters,\n')
+            self.outfile.write('     and G. K.‐L. Chan,\n')
+            self.outfile.write('     WIREs Comput. Mol. Sci. 2018, 8, e1340.')
         self.outfile.write('\n\n')
-        self.outfile.write(' ' + 65*'-' + '\n\n')
+        self.outfile.write(' ' + 75*'-' + '\n')
         return None
 
     def print_scf(self, e_act, e_env, two_e_cross, e_act_emb, correction):
@@ -242,14 +274,14 @@ class Embed:
         self.outfile.write('{:^8} \t {:^8} \t {:^12} \t {:^16}\n'.format(
             7*'-', 8*'-', 13*'-', 16*'-'))
 
-        for ishell in range(self.n_virtual_shell+1):
+        for ishell in range(self.n_cl_shell+1):
             self.outfile.write('{:^8d} \t {:^8} \t {:^12.10f} \t {:^12.10f}\n'\
                 .format(ishell, self.shell_size*(ishell+1),
                 self.correlation_energy_shell[ishell],
                 e_mf_emb + self.correlation_energy_shell[ishell]))
 
         if (ishell == self.max_shell and
-            self.keywords['n_virtual_shell'] > self.max_shell):
+            self.keywords['n_cl_shell'] > self.max_shell):
             n_virtuals = self._n_basis_functions - self.n_act_mos
             n_effective_virtuals = (self._n_basis_functions - self.n_act_mos
                                  - self.n_env_mos)
@@ -282,11 +314,438 @@ class Embed:
         self.outfile.write('\n')
         return None
 
+    def determinant_overlap(self, orbitals, beta_orbitals = None):
+        """
+        Compute the overlap between determinants formed from the
+        provided orbitals and the embedded orbitals
+
+        Parameters
+        ----------
+        orbitals : numpy.array
+            Orbitals to compute the overlap with embedded orbitals.
+        beta_orbitals : numpy.array (None)
+            Beta orbitals, if running with references other than RHF.
+        """
+        if self.keywords['high_level_reference'] == 'rhf' and beta_orbitals == None:
+            overlap = self.occupied_orbitals.T @ self.ao_overlap @ orbitals
+            u, s, vh = np.linalg.svd(overlap)
+            self.determinant_overlap = (
+                np.linalg.det(u)*np.linalg.det(vh)*np.prod(s))
+        else:
+            assert beta_orbitals is not None, '\nProvide beta orbitals.'
+            alpha_overlap = (self.alpha_occupied_orbitals.T @ self.ao_overlap
+                @ beta_orbitals)
+            u, s, vh = np.linalg.svd(alpha_overlap)
+            self.determinant_overlap = 0.5*(
+                np.linalg.det(u)*np.linalg.det(vh)*np.prod(s))
+            beta_overlap = (self.beta_occupied_orbitals.T @ self.ao_overlap
+                @ beta_orbitals)
+            u, s, vh = np.linalg.svd(beta_overlap)
+            self.determinant_overlap += 0.5*(
+                np.linalg.det(u)*np.linalg.det(vh)*np.prod(s))
+        return None
+
+    def count_shells(self):
+        """
+        Guarantees the correct number of shells are computed.
+
+        Returns
+        -------
+        max_shell : int
+            Maximum number of virtual shells.
+        self.n_cl_shell : int
+            Number of virtual shells.
+        """
+        effective_dimension = (self._n_basis_functions - self.n_act_mos
+                            - self.n_env_mos)
+        self.max_shell = int(effective_dimension/self.shell_size)-1
+        if (self.keywords['n_cl_shell']
+            > int(effective_dimension/self.shell_size)):
+            self.n_cl_shell = self.max_shell
+        elif effective_dimension % self.shell_size == 0:
+            self.n_cl_shell = self.max_shell - 1
+        else:
+            self.n_cl_shell = self.keywords['n_cl_shell']
+        return self.max_shell, self.n_cl_shell
+
+
+class PySCFEmbed(Embed):
+    """Class with embedding methods using PySCF."""
+    
+    def run_mean_field(self, v_emb = None):
+        """
+        Runs mean-field calculation with PySCF.
+        If 'level' is not provided, it runs the a calculation at the level
+        given by the 'low_level' key in self.keywords. HF otherwise.
+
+        Parameters
+        ----------
+        v_emb : numpy.array or list of numpy.array (None)
+            Embedding potential.
+        """
+        self._mol = gto.mole.Mole()
+        self._mol.verbose = self.keywords['print_level']
+        #self._mol.output = self.keywords['driver_output']
+        self._mol.atom = self.keywords['geometry']
+        self._mol.max_memory = self.keywords['memory']
+        self._mol.basis = self.keywords['basis']
+        if v_emb is None: # low-level/environment calculation
+            self._mol.output = self.keywords['driver_output']
+            if self.keywords['low_level'] == 'hf':
+                if self.keywords['low_level_reference'].lower() == 'rhf':
+                    self._mean_field = scf.RHF(self._mol)
+                if self.keywords['low_level_reference'].lower() == 'uhf':
+                    self._mean_field = scf.UHF(self._mol)
+                if self.keywords['low_level_reference'].lower() == 'rohf':
+                    self._mean_field = scf.ROHF(self._mol)
+                self.e_xc = 0.0
+            else:
+                if self.keywords['low_level_reference'].lower() == 'rhf':
+                    self._mean_field = dft.RKS(self._mol)
+                if self.keywords['low_level_reference'].lower() == 'uhf':
+                    self._mean_field = dft.UKS(self._mol)
+                if self.keywords['low_level_reference'].lower() == 'rohf':
+                    self._mean_field = dft.ROKS(self._mol)
+            self._mean_field.conv_tol = self.keywords['e_convergence']
+            self._mean_field.xc = self.keywords['low_level']
+            self._mean_field.kernel()
+            self.v_xc_total = self._mean_field.get_veff()
+            self.e_xc_total = self._mean_field.get_veff().exc
+        else:
+            if self.keywords['high_level_reference'].lower() == 'rhf':
+                self._mean_field = scf.RHF(self._mol)
+            if self.keywords['high_level_reference'].lower() == 'uhf':
+                self._mean_field = scf.UHF(self._mol)
+            if self.keywords['high_level_reference'].lower() == 'rohf':
+                self._mean_field = scf.ROHF(self._mol)
+            if self.keywords['low_level_reference'].lower() == 'rhf':
+                self._mol.nelectron = 2*self.n_act_mos
+                self._mean_field.get_hcore = lambda *args: v_emb + self.h_core
+            if (self.keywords['low_level_reference'].lower() == 'rohf'
+                or self.keywords['low_level_reference'].lower() == 'uhf'):
+                self._mol.nelectron = self.n_act_mos + self.beta_n_act_mos
+                self._mean_field.get_vemb = lambda *args: v_emb
+                #self._mean_field.get_fock = self.get_fock()
+            self._mean_field.conv_tol = self.keywords['e_convergence']
+            self._mean_field.kernel()
+        print(self._mean_field.e_tot)
+        print(self._mean_field.mo_occ)
+
+        if self.keywords['low_level_reference'] == 'rhf':
+            docc = (self._mean_field.mo_occ == 2).sum()
+            self.occupied_orbitals = self._mean_field.mo_coeff[:, :docc]
+            self.j, self.k = self._mean_field.get_jk() 
+            self.v_xc_total = self._mean_field.get_veff() - self.j
+        else:
+            n_alpha = (self._mean_field.mo_occ[0] == 1).sum()
+            n_beta = (self._mean_field.mo_occ[1] == 1).sum()
+            if (self.keywords['low_level_reference'] == 'uhf' and v_emb is None
+                or self.keywords['high_level_reference'] == 'uhf'
+                and v_emb is not None):
+                self.alpha_occupied_orbitals = self._mean_field.mo_coeff[
+                    0, :, :n_alpha]
+                self.beta_occupied_orbitals = self._mean_field.mo_coeff[
+                    1, :, :n_beta]
+            if (self.keywords['low_level_reference'] == 'rohf' and v_emb is None
+                or self.keywords['high_level_reference'] == 'rohf'
+                and v_emb is not None):
+                self.alpha_occupied_orbitals = self._mean_field.mo_coeff[:, :n_alpha]
+                self.beta_occupied_orbitals = self._mean_field.mo_coeff[:, :n_beta]
+            j, k = self._mean_field.get_jk() 
+            self.alpha_j = j[0] 
+            self.beta_j = j[1]
+            self.alpha_k = k[0]
+            self.beta_k = k[1]
+            self.alpha_v_xc_total = self._mean_field.get_veff()[0] - j[0] - j[1]
+            self.beta_v_xc_total = self._mean_field.get_veff()[1] - j[0] - j[1]
+
+        self.alpha = 0.0
+        self._n_basis_functions = self._mol.nao
+        self.nre = self._mol.energy_nuc()
+        self.ao_overlap = self._mean_field.get_ovlp(self._mol)
+        self.h_core = self._mean_field.get_hcore(self._mol)
+        return None
+
+    def count_active_aos(self, basis = None):
+        """
+        Computes the number of AOs from active atoms.
+
+        Parameters
+        ----------
+        basis : str
+            Name of basis set from which to count active AOs.
+        
+        Returns
+        -------
+            self.n_active_aos : int
+                Number of AOs in the active atoms.
+        """
+        if basis is None:
+            self.n_active_aos = self._mol.aoslice_nr_by_atom()[
+                self.keywords['n_active_atoms']-1][3]
+        else:
+            self._projected_mol = gto.mole.Mole()
+            self._projected_mol.atom = self.keywords['geometry']
+            self._projected_mol.basis = basis 
+            self._projected_mf = scf.RHF(self._projected_mol)
+            self.n_active_aos = self._projected_mol.aoslice_nr_by_atom()[
+                self.keywords['n_active_atoms']-1][3]
+        return self.n_active_aos
+        
+    def basis_projection(self, orbitals, projection_basis):
+        """
+        Defines a projection of orbitals in one basis onto another.
+        
+        Parameters
+        ----------
+        orbitals : numpy.array
+            MO coefficients to be projected.
+        projection_basis : str
+            Name of basis set onto which orbitals are to be projected.
+
+        Returns
+        -------
+        projected_orbitals : numpy.array
+            MO coefficients of orbitals projected onto projection_basis.
+        """
+        self.projected_overlap = (self._projected_mf.get_ovlp(self._mol)
+            [:self.n_active_aos, :self.n_active_aos])
+        self.overlap_two_basis = gto.intor_cross('int1e_ovlp_sph', 
+            self._mol, self._projected_mol)[:self.n_active_aos, :]
+        projected_orbitals = (np.linalg.inv(self.projected_overlap)
+                            @ self.overlap_two_basis @ orbitals)
+        return projected_orbitals
+
+    def closed_shell_subsystem(self, orbitals):
+        """
+        Computes the potential matrices J, K, and V and subsystem energies.
+
+        Parameters
+        ----------
+        orbitals : numpy.array
+            MO coefficients of subsystem.
+
+        Returns
+        -------
+        e : float
+            Total energy of subsystem.
+        e_xc : float
+            DFT Exchange-correlation energy of subsystem.
+        j : numpy.array
+            Coulomb matrix of subsystem.
+        k : numpy.array
+            Exchange matrix of subsystem.
+        v_xc : numpy.array
+            Kohn-Sham potential matrix of subsystem.
+        """
+        density = 2.0*orbitals @ orbitals.T
+        #It seems that PySCF lumps J and K in the J array 
+        j = self._mean_field.get_j(dm = density)
+        k = np.zeros([self._n_basis_functions, self._n_basis_functions])
+        two_e_term =  self._mean_field.get_veff(self._mol, density)
+        e_xc = two_e_term.exc
+        v_xc = two_e_term - j 
+
+        # Energy
+        e = self.dot(density, self.h_core + j/2) + e_xc
+        return e, e_xc, j, k, v_xc
+
+    def open_shell_subsystem(self, alpha_orbitals, beta_orbitals):
+        """
+        Computes the potential matrices J, K, and V and subsystem
+        energies for open shell cases.
+
+        Parameters
+        ----------
+        alpha_orbitals : numpy.array
+            Alpha MO coefficients.
+        beta_orbitals : numpy.array
+            Beta MO coefficients.
+
+        Returns
+        -------
+        e : float
+            Total energy of subsystem.
+        e_xc : float
+            Exchange-correlation energy of subsystem.
+        alpha_j : numpy.array
+            Alpha Coulomb matrix of subsystem.
+        beta_j : numpy.array
+            Beta Coulomb matrix of subsystem.
+        alpha_k : numpy.array
+            Alpha Exchange matrix of subsystem.
+        beta_k : numpy.array
+            Beta Exchange matrix of subsystem.
+        alpha_v_xc : numpy.array
+            Alpha Kohn-Sham potential matrix of subsystem.
+        beta_v_xc : numpy.array
+            Beta Kohn-Sham potential matrix of subsystem.
+        """
+        alpha_density = alpha_orbitals @ alpha_orbitals.T
+        beta_density = beta_orbitals @ beta_orbitals.T
+
+        # J and K
+        j = self._mean_field.get_j(dm = [alpha_density, beta_density])
+        alpha_j = j[0]
+        beta_j = j[1]
+        alpha_k = np.zeros([self._n_basis_functions, self._n_basis_functions])
+        beta_k = np.zeros([self._n_basis_functions, self._n_basis_functions])
+        two_e_term =  self._mean_field.get_veff(self._mol, [alpha_density,
+            beta_density])
+        e_xc = two_e_term.exc
+        alpha_v_xc = two_e_term[0] - (j[0] + j[1])
+        beta_v_xc = two_e_term[1] - (j[0]+j[1])
+
+        # Energy
+        e = (self.dot(self.h_core, alpha_density + beta_density)
+            + 0.5*(self.dot(alpha_j + beta_j, alpha_density + beta_density))
+            + e_xc)
+
+        return e, e_xc, alpha_j, beta_j, alpha_k, beta_k, alpha_v_xc, beta_v_xc
+        
+    def correlation_energy(self, span_orbitals = None, kernel_orbitals = None,
+        span_orbital_energies = None, kernel_orbital_energies = None):
+        """
+        Computes the correlation energy for the current set of active
+        virtual orbitals.
+        
+        Parameters
+        ----------
+        span_orbitals : numpy.array
+            Orbitals transformed by the span of the previous shell.
+        kernel_orbitals : numpy.array
+            Orbitals transformed by the kernel of the previous shell.
+        span_orbital_energies : numpy.array
+            Orbitals energies of the span orbitals.
+        kernel_orbital_energies : numpy.array
+            Orbitals energies of the kernel orbitals.
+
+        Returns
+        -------
+        correlation_energy : float
+            Correlation energy of the span_orbitals.
+        """
+
+        shift = self._n_basis_functions - self.n_env_mos
+        if span_orbitals is None:
+            # If not using CL orbitals, just freeze the level-shifted MOs
+            frozen_orbitals = [i for i in range(shift, self._n_basis_functions)]
+        else:
+            # Preparing orbitals and energies for CL shell
+            effective_orbitals = np.hstack((span_orbitals, kernel_orbitals))
+            orbital_energies = np.concatenate((span_orbital_energies,
+                kernel_orbital_energies))
+            frozen_orbitals = [i for i in range(self.n_act_mos
+                + span_orbitals.shape[1], self._n_basis_functions)]
+            orbitals = np.hstack((self.occupied_orbitals,
+                effective_orbitals, self._mean_field.mo_coeff[:, shift:]))
+            orbital_energies = (
+                np.concatenate((self._mean_field.mo_energy[:self.n_act_mos],
+                orbital_energies, self._mean_field.mo_energy[shift:])))
+            # Replace orbitals in the mean_field obj by the CL orbitals
+            # and compute correlation energy
+            self._mean_field.mo_energy = orbital_energies
+            self._mean_field.mo_coeff = orbitals
+
+        if self.keywords['high_level'].lower() == 'mp2':
+            #embedded_wf = mp.MP2(self._mean_field).run()
+            embedded_wf = mp.MP2(self._mean_field).set(frozen = frozen_orbitals).run()
+            correlation_energy = embedded_wf.e_corr
+        if (self.keywords['high_level'].lower() == 'ccsd' or 
+            self.keywords['high_level'].lower() == 'ccsd(t)'):
+            embedded_wf = cc.CCSD(self._mean_field).set(frozen = frozen_orbitals).run()
+            correlation_energy = embedded_wf.e_corr
+            if self.keywords['high_level'].lower() == 'ccsd(t)':
+                t_correction = embedded_wf.ccsd_t().T
+                correlation_energy += t_correction
+        # if span_orbitals provided, store correlation energy of shells
+        if span_orbitals is not None:
+            self.correlation_energy_shell.append(correlation_energy)
+        return correlation_energy
+
+    def effective_virtuals(self):
+        """
+        Slices the effective virtuals from the entire virtual space.
+
+        Returns
+        -------
+        effective_orbitals : numpy.array
+            Virtual orbitals without the level-shifted orbitals
+            from the environment.
+        """
+        shift = self._n_basis_functions - self.n_env_mos
+        effective_orbitals = self._mean_field.mo_coeff[:, self.n_act_mos:shift]
+        return effective_orbitals
+
+    def pseudocanonical(self, orbitals):
+        """
+        Returns pseudocanonical orbitals and the corresponding
+        orbital energies.
+        
+        Parameters
+        ----------
+        orbitals : numpy.array
+            MO coefficients of orbitals to be pseudocanonicalized.
+
+        Returns
+        -------
+        e_orbital_pseudo : numpy.array
+            diagonal elements of the Fock matrix in the
+            pseudocanonical basis.
+        pseudo_orbitals : numpy.array
+            pseudocanonical orbitals.
+        """
+        fock_matrix = self._mean_field.get_fock()
+        mo_fock = orbitals.T @ fock_matrix @ orbitals
+        e_orbital_pseudo, pseudo_transformation = np.linalg.eigh(mo_fock)
+        pseudo_orbitals = orbitals @ pseudo_transformation
+        return e_orbital_pseudo, pseudo_orbitals
+
+    def ao_operator(self):
+        """
+        Returns the matrix representation of the operator chosen to
+        construct the shells.
+
+        Returns
+        -------
+
+        K : numpy.array
+            Exchange.
+        V : numpy.array
+            Electron-nuclei potential.
+        T : numpy.array
+            Kinetic energy.
+        H : numpy.array
+            Core (one-particle) Hamiltonian.
+        S : numpy.array
+            Overlap matrix.
+        F : numpy.array
+            Fock matrix.
+        K_orb : numpy.array
+            K orbitals (see Feller and Davidson, JCP, 74, 3977 (1981)).
+        """
+        if (self.keywords['operator'] == 'K' or
+            self.keywords['operator'] == 'K_orb'):
+            self.operator = self._mean_field.get_k()
+            if self.keywords['operator'] == 'K_orb':
+                self.operator = 0.06*self._mean_field.get_fock() - self.operator
+        elif self.keywords['operator'] == 'V':
+            self.operator = self._mol.intor_symmetric('int1e_nuc')
+        elif self.keywords['operator'] == 'T':
+            self.operator = self._mol.intor_symmetric('int1e_kin')
+        elif self.keywords['operator'] == 'H':
+            self.operator = self._mean_field.get_hcore()
+        elif self.keywords['operator'] == 'S':
+            self.operator = self._mean_field.get_ovlp()
+        elif self.keywords['operator'] == 'F':
+            self.operator = self._mean_field.get_fock()
+        return None
 
 class Psi4Embed(Embed):
     """Class with embedding methods using Psi4."""
 
-    def run_psi4(self, level = None):
+
+    def run_mean_field(self, v_emb = None):
         """
         Runs Psi4 (PySCF is coming soon).
         If 'level' is not provided, it runs the a calculation at the level
@@ -294,17 +753,18 @@ class Psi4Embed(Embed):
 
         Parameters
         ----------
-        level : str (None)
-            Level of theory to run calculation.
+        v_emb : numpy.array or list of numpy.array (None)
+            Embedding potential.
         """
-        if level == None:
+        if v_emb is None:
+            self.outfile = open(self.keywords['embedding_output'], 'w')
             # Preparing molecule string with C1 symmetry
             add_c1 = self.keywords['geometry'].splitlines()
             add_c1.append('symmetry c1')
             self.keywords['geometry'] = '\n'.join(add_c1)
 
             # Running psi4 for the env (low level)
-            psi4.set_memory(self.keywords['memory'])
+            psi4.set_memory(str(self.keywords['memory']) + ' MB')
             psi4.core.set_num_threads(self.keywords['num_threads'])
             self._mol = psi4.geometry(self.keywords['geometry'])
             self._mol.set_molecular_charge(self.keywords['charge'])
@@ -338,17 +798,37 @@ class Psi4Embed(Embed):
                     self.beta_v_xc_total = self._wfn.Vb().clone().np
             else:
                 if self.keywords['low_level_reference'] == 'rhf':
-                    self.v_xc_total = np.zeros([self._n_basis_functions,
-                        self._n_basis_functions])
+                    #self.v_xc_total = np.zeros([self._n_basis_functions,
+                        #self._n_basis_functions])
+                    self.v_xc_total = 0.0
                 else:
-                    self.alpha_v_xc_total = np.zeros([self._n_basis_functions,
-                        self._n_basis_functions])
-                    self.beta_v_xc_total = np.zeros([self._n_basis_functions,
-                        self._n_basis_functions])
+                    #self.alpha_v_xc_total = np.zeros([self._n_basis_functions,
+                        #self._n_basis_functions])
+                    #self.beta_v_xc_total = np.zeros([self._n_basis_functions,
+                        #self._n_basis_functions])
+                    self.alpha_v_xc_total = 0.0 
+                    self.beta_v_xc_total = 0.0 
                 self.e_xc_total = 0.0
         else:
             psi4.set_options({'docc': [self.n_act_mos],
                 'reference': self.keywords['high_level_reference']})
+            if self.keywords['high_level_reference'] == 'rhf':
+                f = open('newH.dat', 'w')
+                for i in range(self.h_core.shape[0]):
+                    for j in range(self.h_core.shape[1]):
+                        f.write("%s\n" % (self.h_core + v_emb)[i, j])
+                f.close()
+            else:
+                psi4.set_options({'socc': [self.n_act_mos - self.beta_n_act_mos]})
+                fa = open('Va_emb.dat', 'w')
+                fb = open('Vb_emb.dat', 'w')
+                for i in range(self.h_core.shape[0]):
+                    for j in range(self.h_core.shape[1]):
+                        fa.write("%s\n" % v_emb[0][i, j])
+                        fb.write("%s\n" % v_emb[1][i, j])
+                fa.close()
+                fb.close()
+
             if (self.keywords['high_level'][:2] == 'cc' and
                 self.keywords['cc_type'] == 'df'):
                 psi4.set_options({'cc_type': self.keywords['cc_type'],
@@ -374,7 +854,7 @@ class Psi4Embed(Embed):
         self.alpha = self._wfn.functional().x_alpha()
         return None
 
-    def count_active_aos(self, basis):
+    def count_active_aos(self, basis = None):
         """
         Computes the number of AOs from active atoms.
 
@@ -388,7 +868,7 @@ class Psi4Embed(Embed):
             self.n_active_aos : int
                 Number of AOs in the active atoms.
         """
-        if basis == self.keywords['basis']:
+        if basis is None:
             basis = self._wfn.basisset()
             n_basis_functions = basis.nbf()
         else:
@@ -482,12 +962,12 @@ class Psi4Embed(Embed):
         else:
             basis = self._wfn.basisset()
             n_basis_functions = basis.nbf()
-            v_xc = np.zeros([n_basis_functions, n_basis_functions])
+            v_xc = 0.0
             e_xc = 0.0
 
         # Energy
         e = self.dot(density, 2.0*(self.h_core + j) - self.alpha*k) + e_xc
-        return e, e_xc, j, k, v_xc
+        return e, e_xc, 2.0 * j, k, v_xc
 
     def pseudocanonical(self, orbitals):
         """
@@ -620,10 +1100,12 @@ class Psi4Embed(Embed):
             e_xc = psi4.core.VBase.quadrature_values(
                 self._wfn.V_potential())['FUNCTIONAL']
         else:
-            alpha_v_xc = np.zeros([self._n_basis_functions,
-                self._n_basis_functions])
-            beta_v_xc = np.zeros([self._n_basis_functions,
-                self._n_basis_functions])
+            #alpha_v_xc = np.zeros([self._n_basis_functions,
+                #self._n_basis_functions])
+            #beta_v_xc = np.zeros([self._n_basis_functions,
+                #self._n_basis_functions])
+            alpha_v_xc = 0.0
+            beta_v_xc = 0.0
             e_xc = 0.0
 
         e = (self.dot(self.h_core, alpha_density + beta_density)
@@ -695,37 +1177,6 @@ class Psi4Embed(Embed):
         np.savetxt('heatmap_'+str(shell)+'.dat', mo_operator)
         return None
 
-    def determinant_overlap(self, orbitals, beta_orbitals = None):
-        """
-        Compute the overlap between determinants formed from the
-        provided orbitals and the embedded orbitals
-
-        Parameters
-        ----------
-        orbitals : numpy.array
-            Orbitals to compute the overlap with embedded orbitals.
-        beta_orbitals : numpy.array (None)
-            Beta orbitals, if running with references other than RHF.
-        """
-        if self.keywords['high_level_reference'] == 'rhf' and beta_orbitals == None:
-            overlap = self.occupied_orbitals.T @ self.ao_overlap @ orbitals
-            u, s, vh = np.linalg.svd(overlap)
-            self.determinant_overlap = (
-                np.linalg.det(u)*np.linalg.det(vh)*np.prod(s))
-        else:
-            assert beta_orbitals is not None, '\nProvide beta orbitals.'
-            alpha_overlap = (self.alpha_occupied_orbitals.T @ self.ao_overlap
-                @ beta_orbitals)
-            u, s, vh = np.linalg.svd(alpha_overlap)
-            self.determinant_overlap = 0.5*(
-                np.linalg.det(u)*np.linalg.det(vh)*np.prod(s))
-            beta_overlap = (self.beta_occupied_orbitals.T @ self.ao_overlap
-                @ beta_orbitals)
-            u, s, vh = np.linalg.svd(beta_overlap)
-            self.determinant_overlap += 0.5*(
-                np.linalg.det(u)*np.linalg.det(vh)*np.prod(s))
-        return None
-
     def correlation_energy(self, span_orbitals = None, kernel_orbitals = None,
         span_orbital_energies = None, kernel_orbital_energies = None):
         """
@@ -791,25 +1242,3 @@ class Psi4Embed(Embed):
         effective_orbitals = self._wfn.Ca().np[:, self.n_act_mos:shift]
         return effective_orbitals
 
-    def count_shells(self):
-        """
-        Guarantees the correct number of shells are computed.
-
-        Returns
-        -------
-        max_shell : int
-            Maximum number of virtual shells.
-        self.n_virtual_shell : int
-            Number of virtual shells.
-        """
-        effective_dimension = (self._n_basis_functions - self.n_act_mos
-                            - self.n_env_mos)
-        self.max_shell = int(effective_dimension/self.shell_size)-1
-        if (self.keywords['n_virtual_shell']
-            > int(effective_dimension/self.shell_size)):
-            self.n_virtual_shell = self.max_shell
-        elif effective_dimension % self.shell_size == 0:
-            self.n_virtual_shell = self.max_shell - 1
-        else:
-            self.n_virtual_shell = self.keywords['n_virtual_shell']
-        return self.max_shell, self.n_virtual_shell

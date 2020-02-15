@@ -1,5 +1,5 @@
-import psi4
 import sys
+from pyscf import gto, dft, scf, lib
 from psi_embed import driver 
 
 # Simple (minimal?) example of projection-based embedding using
@@ -17,15 +17,26 @@ H        2.0985  0.2306  0.0000
 H        1.1184 -1.0093  0.8869
 H        1.1184 -1.0093 -0.8869
 """
-options['basis'] = '6-31g*' # basis set 
+options['basis'] = 'cc-pvdz' # basis set 
 options['low_level'] = 'b3lyp' # level of theory of the environment 
 options['high_level'] = 'mp2' # level of theory of the embedded system
 options['n_active_atoms'] = 2 # number of active atoms (first n atoms in the geometry string)
+options['low_level_reference'] = 'rohf'
+options['high_level_reference'] = 'rohf'
+options['package'] = 'pyscf'
 
 # Extra options
 options['num_threads']= 8
-options['n_virtual_shell'] = 1
-options['virtual_projection_basis'] = '6-31g*'
+#options['n_cl_shell'] = 1
+#options['virtual_projection_basis'] = 'cc-pvdz'
 
 # Run embedding calculation
 driver(options)
+'''
+mol=gto.mole.Mole()
+mol.atom=options['geometry']
+mol.basis = 'cc-pvdz'
+mol.verbose=10
+mf = scf.UHF(mol)
+mf.kernel()
+'''

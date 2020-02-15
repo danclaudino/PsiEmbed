@@ -1,6 +1,7 @@
 import os
 import psi4
 import numpy as np
+import inspect
 import embedding_methods
 
 matrix_dot = lambda A, B: np.einsum('ij,ij', A, B)
@@ -17,8 +18,10 @@ def run_closed_shell(keywords):
 
     if keywords['package'].lower() == 'psi4':
         embed = embedding_methods.Psi4Embed(keywords)
-    embed.banner()
-    embed.run_psi4()
+    else:
+        embed = embedding_methods.PySCFEmbed(keywords)
+    embed.run_mean_field()
+    embed.header()
     low_level_orbitals = embed.occupied_orbitals
 
     # Whether or not to project occupied orbitals onto another (minimal) basis
@@ -31,7 +34,7 @@ def run_closed_shell(keywords):
     else:
         projection_orbitals = low_level_orbitals
         ao_overlap = embed.ao_overlap
-        n_act_aos = embed.count_active_aos(keywords['basis'])
+        n_act_aos = embed.count_active_aos()
 
     # Orbital rotation and partition into subsystems A and B
     rotation_matrix, sigma = embed.orbital_rotation(projection_orbitals,
@@ -41,102 +44,85 @@ def run_closed_shell(keywords):
     # Defining active and environment orbitals and density
     act_orbitals = low_level_orbitals @ rotation_matrix.T[:, :n_act_mos]
     env_orbitals = low_level_orbitals @ rotation_matrix.T[:, n_act_mos:]
-    act_density = act_orbitals @ act_orbitals.T
-    env_density = env_orbitals @ env_orbitals.T
+    act_density = 2.0 * act_orbitals @ act_orbitals.T
+    env_density = 2.0 * env_orbitals @ env_orbitals.T
 
     # Retrieving the subsytem energy terms and potential matrices
-    if keywords['package'].lower() == 'psi4':
-        e_act, e_xc_act, j_act, k_act, v_xc_act = (
-            embed.closed_shell_subsystem(act_orbitals))
-        e_env, e_xc_env, j_env, k_env, v_xc_env = (
-            embed.closed_shell_subsystem(env_orbitals))
+    e_act, e_xc_act, j_act, k_act, v_xc_act = (
+        embed.closed_shell_subsystem(act_orbitals))
+    e_env, e_xc_env, j_env, k_env, v_xc_env = (
+        embed.closed_shell_subsystem(env_orbitals))
 
     # Computing cross subsystem terms
-    j_cross = 2.0*(matrix_dot(act_density, j_env)
+    if keywords['package'].lower() == 'psi4':
+        j_cross = 0.5 * (matrix_dot(act_density, j_env)
+                + matrix_dot(env_density, j_act))
+        k_cross = 0.5 * embed.alpha * (matrix_dot(act_density, k_env)
+                + matrix_dot(env_density, k_act))
+    else:
+        j_cross = 0.5 * (matrix_dot(act_density, j_env) 
             + matrix_dot(env_density, j_act))
-    k_cross = -embed.alpha*(matrix_dot(act_density, k_env)
-            + matrix_dot(env_density, k_act))
+        k_cross = 0.0
+
     xc_cross = embed.e_xc_total - e_xc_act - e_xc_env
     two_e_cross = j_cross + k_cross + xc_cross
 
-    # Generating molden files before and after pseudocanonicalization
-    if keywords['molden']:
-        wfn_low_level.Ca().copy(psi4.core.Matrix.from_array(orbitals_act))
-        psi4.driver.molden(wfn_low_level, 'before_pseudocanonical.molden')
-        v, w = np.linalg.eigh(orbitals_act.T @ wfn_low_level.Fa().np
-            @ orbitals_act)
-        pseudo_orbitals_act = orbitals_act @ w
-        wfn_low_level.Ca().copy(psi4.core.Matrix.from_array(
-            pseudo_orbitals_act))
-        psi4.driver.molden(wfn_low_level, 'after_pseudocanonical.molden')
+    # TODO: generate orbital (molden) file before embedding
 
     # Defining the embedded core Hamiltonian
     ao_overlap = embed.ao_overlap
-    projector = keywords['level_shift']*(ao_overlap @ env_density @ ao_overlap)
+    projector = keywords['level_shift'] * (ao_overlap @ env_density 
+        @ ao_overlap)
     h_core = embed.h_core
-    embedding_potential = (2.0*j_env - embed.alpha*k_env 
-                        + embed.v_xc_total - v_xc_act)
-    h_core_emb = h_core + embedding_potential + projector
+    v_emb = (j_env - embed.alpha * k_env + embed.v_xc_total - v_xc_act
+        + projector)
+    #h_core_emb = h_core + embedding_potential + projector
 
-    if (keywords['write_embedding_potential'] == True or
-        keywords['write_embedded_h_core'] == True or 
-        keywords['write_embedded_orbitals'] == True):
-        embed.outfile.write(' Generating requested files...\n') 
-    if keywords['write_embedding_potential'] == True:
-        np.savetxt('embedding_potential.txt', embedding_potential)
-        embed.outfile.write(' Generating embedding potential.\n') 
-    if keywords['write_embedded_h_core'] == True:
-        np.savetxt('embedded_h_core.txt', h_core_emb)
-        embed.outfile.write(' Generating embedded core Hamiltonian.\n') 
-    if keywords['write_embedded_orbitals'] == True:
-        np.savetxt('embedded_orbitals.txt', orbitals_act)
-        embed.outfile.write(' Generating embedded orbitals.\n') 
-    if (keywords['write_embedding_potential'] == True or
-        keywords['write_embedded_h_core'] == True or 
-        keywords['write_embedded_orbitals'] == True):
+    if keywords['save_embedding_potential']:
+        np.savetxt('embedding_potential.txt', v_emb)
+        embed.outfile.write(' Embedding potential saved to '
+            + 'embedding_potential.txt.\n') 
+    if keywords['save_embedded_h_core']:
+        np.savetxt('embedded_h_core.txt', h_core + v_emb)
+        embed.outfile.write(' Embedded core Hamiltonian saved to '
+            + 'embedded_h_core.txt.\n') 
+    if keywords['save_embedded_orbitals']:
+        np.savetxt('embedded_orbitals.txt', act_orbitals)
+        embed.outfile.write(' Embedded orbitals saved to '
+            + 'embedded_orbitals.txt.\n') 
+    if keywords['run_high_level'] == False:
         embed.outfile.write(' Requested files generated. Ending PsiEmbed.\n\n') 
         raise SystemExit(0)
 
-    # Saving embedded core Hamiltonian to 'newH.dat',
-    # which is read by my version of Psi4
-    f = open('newH.dat', 'w')
-    for i in range(h_core_emb.shape[0]):
-        for j in range(h_core_emb.shape[1]):
-            f.write("%s\n" % h_core_emb[i,j])
-    f.close()
-
-    # Running embedded calculation
-    embed.run_psi4('hf')
-
-    if keywords['molden']:
-        psi4.driver.molden(wfn_hf, 'embedded.molden')
+    embed.run_mean_field(v_emb)
 
     # Overlap between the C_A determinant and the embedded determinant
     embed.determinant_overlap(act_orbitals)
-
     # Computing the embedded SCF energy
-    density_emb = embed.occupied_orbitals @ embed.occupied_orbitals.T
+    density_emb = 2.0 * embed.occupied_orbitals @ embed.occupied_orbitals.T
     j_emb = embed.j
     k_emb = embed.k
-    e_act_emb = matrix_dot(density_emb, 2*h_core + 2*j_emb - k_emb)
-    correction = 2.0*(matrix_dot(h_core_emb - h_core,
-        density_emb - act_density))
+    if keywords['package'].lower() == 'psi4':
+        e_act_emb = matrix_dot(density_emb, h_core + j_emb - 0.5 * k_emb)
+    else:
+        e_act_emb = matrix_dot(density_emb, h_core + 0.5 * j_emb - 0.25 * k_emb)
+    correction = (matrix_dot(v_emb, density_emb - act_density))
     e_mf_emb = e_act_emb + e_env + two_e_cross + embed.nre + correction
     embed.print_scf(e_act, e_env, two_e_cross, e_act_emb, correction)
 
     # --- Post embedded HF calculation ---
-    if 'n_virtual_shell' not in keywords:
+    if 'n_cl_shell' not in keywords:
         e_correlation = embed.correlation_energy()
         e_total = e_mf_emb + e_correlation
         embed.outfile.write(' Embedded {:>5}-in-{:<5} E[A] \t = {:>16.10f}\n'.
             format(keywords['high_level'].upper(),
             keywords['low_level'].upper(), e_total))
     else:
-        assert isinstance(keywords['n_virtual_shell'], int)
+        assert isinstance(keywords['n_cl_shell'], int)
         embed.outfile.write('\n Singular values of '
-            + str(keywords['n_virtual_shell'] + 1) + ' virtual shells\n')
-        embed.outfile.write(' Shells constructed with the %s operator\n'.
-            format(keywords['operator']))
+            + str(keywords['n_cl_shell'] + 1) + ' CL shells\n')
+        embed.outfile.write(' Shells constructed with the ' 
+            + keywords['operator']  + ' operator\n')
 
         # First virtual shell
         n_act_aos = embed.count_active_aos(keywords['virtual_projection_basis'])
@@ -174,7 +160,7 @@ def run_closed_shell(keywords):
             embed.molden(virtual_span, virtual_ker, 0, n_env_mos)
 
         # Checking the maximum number of shells
-        max_shell, n_virtual_shell = embed.count_shells()
+        max_shell, n_cl_shell = embed.count_shells()
 
         # Choosing the operator to be used to grow the shells
         embed.ao_operator()
@@ -182,7 +168,7 @@ def run_closed_shell(keywords):
         ishell = 0
 
         # Iterative spanning of the virtual space via CL orbitals
-        for ishell in range(1, n_virtual_shell + 1):
+        for ishell in range(1, n_cl_shell + 1):
             mo_operator = span_orbitals.T @ operator @ kernel_orbitals
             rotation_matrix, sigma = embed.orbital_rotation(mo_operator,
                 shell_size)
@@ -210,7 +196,7 @@ def run_closed_shell(keywords):
                 keywords['low_level'].upper(), ishell, shell_size*(ishell + 1),
                 e_mf_emb + e_correlation))
 
-        if ishell == max_shell and keywords['n_virtual_shell'] > max_shell:
+        if ishell == max_shell and keywords['n_cl_shell'] > max_shell:
             virtual_span = np.hstack((span_orbitals, kernel_orbitals))
             e_orbital_span, pseudo_span = embed.pseudocanonical(virtual_span)
             e_correlation = embed.correlation_energy()
@@ -223,7 +209,7 @@ def run_closed_shell(keywords):
         embed.outfile.write(' Correction from the projected B\t = {:>16.2e}\n'.
             format(projected_env_correction))
         embed.outfile.close()
-    os.system('rm newH.dat')
+    if keywords['package'].lower() == 'psi4': os.system('rm newH.dat')
     
 def run_open_shell(keywords):
     """
@@ -237,8 +223,10 @@ def run_open_shell(keywords):
 
     if keywords['package'].lower() == 'psi4':
         embed = embedding_methods.Psi4Embed(keywords)
-    embed.banner()
-    embed.run_psi4()
+    else:
+        embed = embedding_methods.PySCFEmbed(keywords)
+    embed.run_mean_field()
+    embed.header()
     alpha_occupied_orbitals = embed.alpha_occupied_orbitals
     beta_occupied_orbitals = embed.beta_occupied_orbitals
 
@@ -280,13 +268,12 @@ def run_open_shell(keywords):
     beta_env_density = beta_env_orbitals @ beta_env_orbitals.T
 
     # Retrieving the subsytem energy terms and potential matrices
-    if keywords['package'].lower() == 'psi4':
-        (e_act, e_xc_act, alpha_j_act, beta_j_act, alpha_k_act,
-            beta_k_act, alpha_v_xc_act, beta_v_xc_act) = (
-            embed.open_shell_subsystem(alpha_act_orbitals, beta_act_orbitals))
-        (e_env, e_xc_env, alpha_j_env, beta_j_env, alpha_k_env,
-            beta_k_env, alpha_v_xc_env, beta_v_xc_env) = (
-            embed.open_shell_subsystem(alpha_env_orbitals, beta_env_orbitals))
+    (e_act, e_xc_act, alpha_j_act, beta_j_act, alpha_k_act,
+        beta_k_act, alpha_v_xc_act, beta_v_xc_act) = (
+        embed.open_shell_subsystem(alpha_act_orbitals, beta_act_orbitals))
+    (e_env, e_xc_env, alpha_j_env, beta_j_env, alpha_k_env,
+        beta_k_env, alpha_v_xc_env, beta_v_xc_env) = (
+        embed.open_shell_subsystem(alpha_env_orbitals, beta_env_orbitals))
 
     # Computing cross subsystem terms
     j_cross = 0.5*(matrix_dot(alpha_j_act, alpha_env_density)
@@ -304,18 +291,7 @@ def run_open_shell(keywords):
     xc_cross = embed.e_xc_total - e_xc_act - e_xc_env
     two_e_cross = j_cross + k_cross + xc_cross
 
-    # Generating molden files before and after pseudocanonicalization
-    if keywords['molden']:
-        wfn_low_level.Ca().copy(psi4.core.Matrix.from_array(orbitals_act))
-        psi4.driver.molden(wfn_low_level, 'before_pseudocanonical.molden')
-        v, w = np.linalg.eigh(orbitals_act.T @ wfn_low_level.Fa().np
-            @ orbitals_act)
-        pseudo_orbitals_act = orbitals_act @ w
-        wfn_low_level.Ca().copy(psi4.core.Matrix.from_array(
-            pseudo_orbitals_act))
-        psi4.driver.molden(wfn_low_level, 'after_pseudocanonical.molden')
-
-    # Defining the embedded core Hamiltonian
+    # Defining the embedding potential
     ao_overlap = embed.ao_overlap
     alpha_projector = keywords['level_shift']*(ao_overlap @ alpha_env_density
         @ ao_overlap)
@@ -326,25 +302,31 @@ def run_open_shell(keywords):
     beta_v_emb = (alpha_j_env + beta_j_env - embed.alpha*beta_k_env
                 + beta_projector + embed.beta_v_xc_total - beta_v_xc_act)
 
-    # Saving embedded core Hamiltonian to 'newH.dat',
-    # which is read by my version of Psi4
-    fa = open('Va_emb.dat', 'w')
-    fb = open('Vb_emb.dat', 'w')
-    for i in range(alpha_v_emb.shape[0]):
-        for j in range(alpha_v_emb.shape[1]):
-            fa.write("%s\n" % alpha_v_emb[i,j])
-            fb.write("%s\n" % beta_v_emb[i,j])
-    fa.close()
-    fb.close()
+    if keywords['save_embedded_h_core']:
+        embed.outfile.write(' Cannot save embedded core Hamiltonian for '
+            + 'open-shells. Saving the embedding potentials instead.\n') 
+    if keywords['save_embedding_potential'] or keywords['save_embedded_h_core']:
+        np.savetxt('alpha_embedding_potential.txt', v_emb)
+        embed.outfile.write(' Alpha embedding potential saved to '
+            + 'alpha_embedding_potential.txt.\n') 
+        np.savetxt('beta_embedding_potential.txt', v_emb)
+        embed.outfile.write(' Beta embedding potential saved to '
+            + 'beta_embedding_potential.txt.\n') 
+    if keywords['save_embedded_orbitals']:
+        np.savetxt('alpha_embedded_orbitals.txt', act_orbitals)
+        embed.outfile.write(' Alpha embedded orbitals saved to '
+            + 'alpha_embedded_orbitals.txt.\n') 
+        np.savetxt('beta_embedded_orbitals.txt', act_orbitals)
+        embed.outfile.write(' Beta embedded orbitals saved to '
+            + 'beta_embedded_orbitals.txt.\n') 
+    if keywords['run_high_level'] == False:
+        embed.outfile.write(' Requested files generated. Ending PsiEmbed.\n\n') 
+        raise SystemExit(0)
 
-    # Running embedded calculation
-    embed.run_psi4('hf')
-    if keywords['molden']:
-        psi4.driver.molden(wfn_hf, 'embedded.molden')
+    embed.run_mean_field([alpha_v_emb, beta_v_emb])
 
     # Overlap between the C_A determinant and the embedded determinant
     embed.determinant_overlap(alpha_act_orbitals, beta_act_orbitals)
-
     # Computing the embedded SCF energy
     alpha_density_emb = (embed.alpha_occupied_orbitals
         @ embed.alpha_occupied_orbitals.T)
@@ -366,7 +348,7 @@ def run_open_shell(keywords):
     embed.print_scf(e_act, e_env, two_e_cross, e_act_emb, correction)
 
     # --- Post embedded HF calculation ---
-    if 'n_virtual_shell' not in keywords:
+    if 'n_cl_shell' not in keywords:
         e_correlation = embed.correlation_energy()
         e_total = e_mf_emb + e_correlation
         embed.outfile.write(' Embedded {:>5}-in-{:<5} E[A] \t = {:>16.10f}\n'.
@@ -374,9 +356,9 @@ def run_open_shell(keywords):
             keywords['low_level'].upper(), e_total))
     else:
         raise NotImplementedError('CL orbitals for open-shells coming soon!')
-        assert isinstance(keywords['n_virtual_shell'], int)
+        assert isinstance(keywords['n_cl_shell'], int)
         embed.outfile.write('\n Singular values of '
-            + str(keywords['n_virtual_shell'] + 1) + ' virtual shells\n')
+            + str(keywords['n_cl_shell'] + 1) + ' virtual shells\n')
         embed.outfile.write(' Shells constructed with the %s operator\n'.format(
             keywords['operator']))
 
@@ -414,14 +396,14 @@ def run_open_shell(keywords):
             embed.molden(vritual_span, virtual_ker, 0, n_env_mos)
 
         # Checking the maximum number of shells
-        max_shell, n_virtual_shell = embed.count_shells()
+        max_shell, n_cl_shell = embed.count_shells()
 
         # Choosing the operator to be used to grow the shells
         embed.ao_operator()
         operator = embed.operator
            
         # Iterative spanning of the virtual space via CL orbitals
-        for ishell in range(1, n_virtual_shell + 1):
+        for ishell in range(1, n_cl_shell + 1):
             mo_operator = span_orbitals.T @ operator @ kernel_orbitals
             rotation_matrix, sigma = embed.orbital_rotation(mo_operator,
                 shell_size)
@@ -447,7 +429,7 @@ def run_open_shell(keywords):
                 keywords['low_level'].upper(), ishell, shell_size*(ishell + 1),
                 e_mf_emb + e_correlation))
 
-        if ishell == max_shell and keywords['n_virtual_shell'] > max_shell:
+        if ishell == max_shell and keywords['n_cl_shell'] > max_shell:
             virtual_span = np.hstack((span_orbitals, kernel_orbitals))
             e_orbital_span, pseudo_span = embed.pseudocanonical(virtual_span)
             e_correlation = embed.correlation_energy()
@@ -460,5 +442,5 @@ def run_open_shell(keywords):
         embed.outfile.write(' Correction from the projected B\t = {:>16.2e}\n'.
             format(projected_env_correction))
         embed.outfile.close()
-    os.system('rm Va_emb.dat Vb_emb.dat')
+    if keywords['package'].lower() == 'psi4':os.system('rm Va_emb.dat Vb_emb.dat')
     

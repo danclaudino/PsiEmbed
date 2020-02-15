@@ -1,0 +1,28 @@
+
+ ---------------------------------------------------------------------------
+                               PsiEmbed
+
+                        Python Stack for Improved
+       and Efficient Methods and Benchmarking in Embedding Development
+
+                            Daniel Claudino
+                            September  2019
+ ---------------------------------------------------------------------------
+
+ Main references: 
+
+     Projection-based embedding:
+     F.R. Manby, M. Stella, J.D. Goodpaster, T.F. Miller. III,
+     J. Chem. Theory Comput. 2012, 8, 2564.
+
+     SPADE partition:
+     D. Claudino, N.J. Mayhall,
+     J. Chem. Theory Comput. 2019, 15, 1053.
+
+     PySCF:
+     Q. Sun, T. C. Berkelbach, N. S. Blunt, G. H. Booth, S. Guo, Z. Li,
+     J. Liu, J. D. McClain, E. R. Sayfutyarova, S. Sharma, S. Wouters,
+     and G. K.‐L. Chan,
+     WIREs Comput. Mol. Sci. 2018, 8, e1340.
+
+ ---------------------------------------------------------------------------

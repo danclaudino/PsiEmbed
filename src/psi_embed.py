@@ -13,8 +13,8 @@ def driver(keywords):
         Psi4 is the only option at present.
     num_threads : int (1)
         Number of threads.
-    memory : str ('1000 MB')
-        Allocated memory.
+    memory : int/float (1000)
+        Allocated memory in MB.
     charge : int (0)
         Molecular charge.
     multiplicity : int (1)
@@ -75,7 +75,7 @@ def driver(keywords):
     default_keywords = {}
     default_keywords['package'] = 'psi4'
     default_keywords['num_threads'] = 1
-    default_keywords['memory'] = '1000 MB'
+    default_keywords['memory'] = 1000
     default_keywords['charge'] = 0
     default_keywords['multiplicity'] = 1
     default_keywords['low_level_reference'] = 'rhf'
@@ -96,9 +96,10 @@ def driver(keywords):
     default_keywords['molden'] = False
     default_keywords['print_level'] = 1
     default_keywords['cc_type'] = 'df'
-    default_keywords['write_embedding_potential'] = False
-    default_keywords['write_embedded_h_core'] = False
-    default_keywords['write_embedded_orbitals'] = False
+    default_keywords['save_embedding_potential'] = False
+    default_keywords['save_embedded_h_core'] = False
+    default_keywords['save_embedded_orbitals'] = False
+    default_keywords['run_high_level'] = True
 
     # Checking if the necessary keywords have been defined
     assert 'low_level' in keywords, ('\n Choose level of theory',
@@ -113,20 +114,23 @@ def driver(keywords):
         if key not in keywords:
             keywords[key] = default_keywords[key]
 
-    if ('n_virtual_shell' in keywords and 
+    if ('n_cl_shell' in keywords and 
         'virtual_projection_basis' not in keywords):
         keywords['virtual_projection_basis'] = keywords['basis']
 
     if (keywords['low_level_reference'] == 'rhf' and 
             keywords['high_level_reference'] == 'rhf'):
         run_closed_shell(keywords)
+    else:
+        run_open_shell(keywords)
+    '''
     elif (keywords['low_level_reference'] == 'uhf' and 
             keywords['high_level_reference'] == 'uhf' or
             keywords['low_level_reference'] == 'uhf' and 
             keywords['high_level_reference'] == 'rohf'):
         run_open_shell(keywords)
     else:
-        raise Exception(' The allowed combinations of' 
+        raise Exception(' The allowed combinations of ' 
             + 'low/high_level_reference keywords are: RHF/RHF, UHF/UHF, '
             + 'and UHF/ROHF.')
-
+    '''
