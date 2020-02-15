@@ -42,7 +42,7 @@ v_emb = mf.get_vemb()
 f = h1e + vhf + v_emb
 ```
 
-For ROHF, lines 62-64 should look like this:
+For ROHF, lines 62-64 in `/path/to/pyscf/rohf.py` should look like this:
 
 ```
 v_emb = mf.get_vemb()
