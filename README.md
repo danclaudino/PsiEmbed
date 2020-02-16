@@ -4,7 +4,7 @@
 
 ## Latest
 
-PsiEmbed can now work with PySCF, and the corresponding documentation should come out shortly. It is now possible to save the embedded potentials, embedded orbitals, and embedded core Hamiltonian (the latter only for closed-shells). In the meantime, feel free to reach with questions/comments/issues.
+PsiEmbed can now work with PySCF, and the corresponding documentation should come out shortly. It is now possible to save the embedded potentials, embedded orbitals, and embedded core Hamiltonian (the latter only for closed-shells). In the meantime, feel free to reach out with questions/comments/issues.
 
 ## Getting started
 
@@ -26,7 +26,7 @@ Start by forking my Psi4 repository and compiling it according to the instructio
 ### PySCF
 First, install the latest version (tested for version 1.70 in the pip repository). More on how to install PySCF can be found [here](https://sunqm.github.io/pyscf/). 
 
-If you don't expect to run embedding calculations with open-shells systems, nothing is need apart from the installation above.
+If you don't expect to run embedding calculations for open-shell systems, nothing is need apart from the installation above.
 
 If you will compute open-shells, then the easiest way to get PsiEmbed to work with PySCF (for now) is to make some slight changes in the installed PySCF python package. Add the following two lines to the SCF base class (I include them in lines 1457-1458) in `/path/to/pyscf/scf/hf.py`:
 

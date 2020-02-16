@@ -32,11 +32,3 @@ options['num_threads']= 8
 
 # Run embedding calculation
 driver(options)
-'''
-mol=gto.mole.Mole()
-mol.atom=options['geometry']
-mol.basis = 'cc-pvdz'
-mol.verbose=10
-mf = scf.UHF(mol)
-mf.kernel()
-'''

@@ -26,3 +26,29 @@
      WIREs Comput. Mol. Sci. 2018, 8, e1340.
 
  ---------------------------------------------------------------------------
+
+
+ Energy values in atomic units
+ Embedded calculation: MP2-in-B3LYP
+
+ Orbital partition method: SPADE
+
+ Number of alpha orbitals in active subsystem: 5
+ Number of beta orbitals in active subsystem: 5
+ Number of alpha orbitals in environment: 8
+ Number of beta orbitals in environment: 8
+
+ --- Before embedding --- 
+ (B3LYP) E[A]   		 =  -127.4083066425
+ (B3LYP) E[B]   		 =  -151.7275997860
+ Intersystem interaction G 	 =    42.1803232693
+ Nuclear repulsion energy 	 =    82.0107447779
+ (B3LYP) E[A+B] 		 =  -154.9448383812
+
+ --- After embedding --- 
+ Embedded SCF E[A] 		 =  -126.9817321466
+ Embedded density correction 	 =    -0.0604317790
+ Embedded HF-in-B3LYP E[A] 	 =  -154.5786956643
+ <SD_before|SD_after> 		 =     0.9992152321
+
+ Embedded   MP2-in-B3LYP E[A] 	 =  -154.7835405666

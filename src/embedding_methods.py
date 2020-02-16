@@ -425,7 +425,6 @@ class PySCFEmbed(Embed):
                 or self.keywords['low_level_reference'].lower() == 'uhf'):
                 self._mol.nelectron = self.n_act_mos + self.beta_n_act_mos
                 self._mean_field.get_vemb = lambda *args: v_emb
-                #self._mean_field.get_fock = self.get_fock()
             self._mean_field.conv_tol = self.keywords['e_convergence']
             self._mean_field.kernel()
 
@@ -435,12 +434,11 @@ class PySCFEmbed(Embed):
             self.j, self.k = self._mean_field.get_jk() 
             self.v_xc_total = self._mean_field.get_veff() - self.j
         else:
-            n_alpha = (self._mean_field.mo_occ[0] == 1).sum()
-            n_beta = (self._mean_field.mo_occ[1] == 1).sum()
-            # TODO: make the distinction for UHF and ROHF orbitals
             if (self.keywords['low_level_reference'] == 'uhf' and v_emb is None
                 or self.keywords['high_level_reference'] == 'uhf'
                 and v_emb is not None):
+                n_alpha = (self._mean_field.mo_occ[0] == 1).sum()
+                n_beta = (self._mean_field.mo_occ[1] == 1).sum()
                 self.alpha_occupied_orbitals = self._mean_field.mo_coeff[
                     0, :, :n_alpha]
                 self.beta_occupied_orbitals = self._mean_field.mo_coeff[
@@ -448,6 +446,8 @@ class PySCFEmbed(Embed):
             if (self.keywords['low_level_reference'] == 'rohf' and v_emb is None
                 or self.keywords['high_level_reference'] == 'rohf'
                 and v_emb is not None):
+                n_beta = (self._mean_field.mo_occ == 2).sum()
+                n_alpha = n_beta + (self._mean_field.mo_occ == 1).sum()
                 self.alpha_occupied_orbitals = self._mean_field.mo_coeff[:, :n_alpha]
                 self.beta_occupied_orbitals = self._mean_field.mo_coeff[:, :n_beta]
             j, k = self._mean_field.get_jk() 
